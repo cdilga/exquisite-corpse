@@ -1,0 +1,134 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wrangler CLI
+        run: npm install -g wrangler
+
+      - name: Install dependencies
+        run: |
+          # Note: Using 'npm install' instead of 'npm ci' for compatibility
+          # npm ci is preferred in CI but causes issues with some automation tools
+          npm install
+
+      # Uncomment the step below once you have tests
+      # - name: Run tests
+      #   run: npm test
+
+      - name: Deploy to Cloudflare Production
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Deploy to production environment
+          DEPLOY_OUTPUT=$(wrangler deploy --env production 2>&1 | tee /dev/stderr)
+          echo "DEPLOY_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$DEPLOY_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          # Extract deployment URL (workers.dev URL)
+          DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[^\s]+\.workers\.dev' | head -1)
+
+          # Also try to extract custom domain URL
+          CUSTOM_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[^\s]+\.dilger\.dev' | head -1)
+
+          # Prefer custom domain if available, otherwise use workers.dev
+          if [ -n "$CUSTOM_URL" ]; then
+            DEPLOY_URL="$CUSTOM_URL"
+          elif [ -z "$DEPLOY_URL" ]; then
+            # Fallback: try to find any HTTPS URL
+            DEPLOY_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[^\s]+' | head -1)
+          fi
+
+          echo "DEPLOY_URL=$DEPLOY_URL" >> $GITHUB_ENV
+          echo "CUSTOM_URL=$CUSTOM_URL" >> $GITHUB_ENV
+          echo "✅ Deployed to: $DEPLOY_URL"
+
+      - name: Comment Deployment URL
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.DEPLOY_URL != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployUrl = process.env.DEPLOY_URL;
+            const customUrl = process.env.CUSTOM_URL;
+            const commit = context.sha.substring(0, 7);
+
+            let urlInfo = `📍 **URL**: ${deployUrl}`;
+            if (customUrl && customUrl !== deployUrl) {
+              urlInfo = `📍 **URLs**:\n- Production Domain: ${customUrl}\n- Workers.dev: ${deployUrl}`;
+            }
+
+            // Find the most recent commit's associated PR
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha
+            });
+
+            if (prs.data.length > 0) {
+              const pr = prs.data[0];
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `🚀 **Deployed to Production**\n\n${urlInfo}\n📝 **Commit**: ${commit}`
+              });
+            }
+
+      - name: Deploy PR Preview
+        if: github.event_name == 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Deploy with PR-specific name
+          PR_NAME="${GITHUB_HEAD_REF//[^a-zA-Z0-9-]/-}"
+          DEPLOY_OUTPUT=$(wrangler deploy --name "pr-${PR_NAME}-${{ github.event.pull_request.number }}" 2>&1 | tee /dev/stderr)
+          echo "DEPLOY_OUTPUT<<EOF" >> $GITHUB_ENV
+          echo "$DEPLOY_OUTPUT" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+          # Extract preview URL
+          PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[^\s]+\.workers\.dev' | head -1)
+          if [ -z "$PREVIEW_URL" ]; then
+            PREVIEW_URL=$(echo "$DEPLOY_OUTPUT" | grep -oP 'https://[^\s]+' | grep '\.workers\.dev' | head -1)
+          fi
+          echo "PREVIEW_URL=$PREVIEW_URL" >> $GITHUB_ENV
+          echo "✅ Preview deployed to: $PREVIEW_URL"
+
+      - name: Comment PR Preview URL
+        if: github.event_name == 'pull_request' && env.PREVIEW_URL != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const previewUrl = process.env.PREVIEW_URL;
+            const commit = context.sha.substring(0, 7);
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🔍 **Preview Deployment Ready**\n\n📍 **Preview URL**: ${previewUrl}\n📝 **Commit**: ${commit}\n\n> This is a temporary preview deployment for this PR. It will be available until the PR is closed.`
+            });

@@ -1,0 +1,31 @@
+{
+  "name": "cloudflare-worker-template",
+  "version": "0.1.0",
+  "description": "Cloudflare Worker template",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "deploy:beta": "wrangler deploy --env beta",
+    "deploy:staging": "wrangler deploy --env staging",
+    "tail": "wrangler tail",
+    "tail:beta": "wrangler tail --env beta",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:local": "wrangler dev --local & npm run test:e2e",
+    "test:deployed": "DEPLOYED_URL=https://$(npm pkg get name | tr -d '\"').dilger.dev playwright test"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.5.0",
+    "@playwright/test": "^1.48.0",
+    "miniflare": "^3.0.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

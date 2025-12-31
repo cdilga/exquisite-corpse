@@ -1,0 +1,30 @@
+name = "exquisite-corpse"
+main = "src/index.js"
+compatibility_date = "2024-12-20"
+
+# Enable automatic workers.dev subdomain
+workers_dev = true
+
+# Production deployment configuration
+[env.production]
+name = "exquisite-corpse"
+vars = { ENVIRONMENT = "production" }
+routes = [
+  { pattern = "exquisite-corpse.dilger.dev/*", zone_name = "dilger.dev" }
+]
+
+# Uncomment to use KV namespaces
+# [[kv_namespaces]]
+# binding = "MY_KV"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# Uncomment to use Durable Objects
+# [[durable_objects.bindings]]
+# name = "MY_DURABLE_OBJECT"
+# class_name = "MyDurableObject"
+
+# Uncomment to use D1 Database
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "my-database"
+# database_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

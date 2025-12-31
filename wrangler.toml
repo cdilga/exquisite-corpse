@@ -1,9 +1,19 @@
 name = "exquisite-corpse"
 main = "src/index.js"
-compatibility_date = "2024-12-20"
+compatibility_date = "2024-12-20"  # Consider updating this to today's date or later (e.g., "2025-12-31")
 
 # Enable automatic workers.dev subdomain
 workers_dev = true
+
+# Durable Objects configuration (top-level – useful for local dev/default deployment)
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+# Migrations (top-level – inherited by environments)
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
 
 # Production deployment configuration
 [env.production]
@@ -13,23 +23,7 @@ routes = [
   { pattern = "exquisite-corpse.dilger.dev/*", zone_name = "dilger.dev" }
 ]
 
-# Uncomment to use KV namespaces
-# [[kv_namespaces]]
-# binding = "MY_KV"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-# Durable Objects configuration
-[[durable_objects.bindings]]
+# Repeat the Durable Object binding for production (required!)
+[[env.production.durable_objects.bindings]]
 name = "GAME_ROOM"
 class_name = "GameRoom"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["GameRoom"]
-
-
-# Uncomment to use D1 Database
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-database"
-# database_id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

@@ -18,10 +18,14 @@ routes = [
 # binding = "MY_KV"
 # id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# Uncomment to use Durable Objects
-# [[durable_objects.bindings]]
-# name = "MY_DURABLE_OBJECT"
-# class_name = "MyDurableObject"
+# Durable Objects configuration
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["GameRoom"]
 
 # Uncomment to use D1 Database
 # [[d1_databases]]

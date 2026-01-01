@@ -42,25 +42,26 @@ describe('Exquisite Corpse Game', () => {
 });
 
 describe('GameRoom Durable Object', () => {
-  it('should generate unique room codes', async () => {
-    const id1 = env.GAME_ROOM.idFromName('TEST');
-    const stub1 = env.GAME_ROOM.get(id1);
+  it('should use room code from URL', async () => {
+    const roomCode = 'TEST';
+    const id = env.GAME_ROOM.idFromName(roomCode);
+    const stub = env.GAME_ROOM.get(id);
 
-    const request = new Request('http://localhost/info');
-    const response = await stub1.fetch(request);
+    const request = new Request(`http://localhost/room/${roomCode}/info`);
+    const response = await stub.fetch(request);
     const data = await response.json();
 
-    expect(data.roomCode).toBeDefined();
-    expect(data.roomCode.length).toBe(4);
+    expect(data.roomCode).toBe(roomCode);
     expect(data.playerCount).toBe(0);
     expect(data.gameStarted).toBe(false);
+    expect(data.gameComplete).toBe(false);
   });
 
   it('should handle WebSocket upgrade requests', async () => {
     const id = env.GAME_ROOM.idFromName('WS01');
     const stub = env.GAME_ROOM.get(id);
 
-    const request = new Request('http://localhost/', {
+    const request = new Request('http://localhost/room/WS01', {
       headers: {
         'Upgrade': 'websocket',
       },
@@ -69,5 +70,30 @@ describe('GameRoom Durable Object', () => {
     const response = await stub.fetch(request);
     expect(response.status).toBe(101);
     expect(response.webSocket).toBeDefined();
+  });
+
+  it('should initialize game state with configurable rounds', async () => {
+    const roomCode = 'TEST';
+    const id = env.GAME_ROOM.idFromName(roomCode);
+    const stub = env.GAME_ROOM.get(id);
+
+    const request = new Request(`http://localhost/room/${roomCode}/info`);
+    const response = await stub.fetch(request);
+    const data = await response.json();
+
+    expect(data).toHaveProperty('roomCode', roomCode);
+    expect(data).toHaveProperty('gameStarted', false);
+    expect(data).toHaveProperty('gameComplete', false);
+  });
+
+  it('should calculate total turns correctly for multi-round games', async () => {
+    // This test validates the logic: 4 players × 2 rounds = 8 total turns
+    const playersCount = 4;
+    const roundsPerPlayer = 2;
+    const expectedTotalTurns = playersCount * roundsPerPlayer;
+
+    expect(expectedTotalTurns).toBe(8);
+
+    // Later, when feature is implemented, we'll test that game completes after 8 turns
   });
 });

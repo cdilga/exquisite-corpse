@@ -7,9 +7,16 @@ export class GameRoom {
     this.state = state;
     this.env = env;
     this.sessions = new Map(); // playerId -> WebSocket
+    this.roomCode = null; // Will be set from URL
   }
 
   async fetch(request) {
+    // Extract room code from URL path (/room/ABCD)
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const urlRoomCode = pathParts[2]; // Get ABCD from /room/ABCD
+    this.roomCode = urlRoomCode.toUpperCase();
+
     // Handle WebSocket upgrade
     if (request.headers.get('Upgrade') === 'websocket') {
       const pair = new WebSocketPair();
@@ -24,7 +31,6 @@ export class GameRoom {
     }
 
     // Handle HTTP requests for room info
-    const url = new URL(request.url);
     if (url.pathname.endsWith('/info')) {
       const state = await this.getGameState();
       return new Response(JSON.stringify({
@@ -261,9 +267,9 @@ export class GameRoom {
   async getGameState() {
     let state = await this.state.storage.get('gameState');
     if (!state) {
-      // Initialize new room
+      // Initialize new room with room code from URL
       state = {
-        roomCode: this.generateRoomCode(),
+        roomCode: this.roomCode, // Use room code from URL path
         players: [],
         story: [],
         currentTurnIndex: 0,

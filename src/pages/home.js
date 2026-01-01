@@ -121,6 +121,26 @@ function getHeadSection() {
       0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
       50% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.9); }
     }
+
+    /* Dark card styling */
+    .dark-card {
+      background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-secondary) 100%);
+      border: 2px solid var(--border-glow);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .dark-card:hover {
+      box-shadow: 0 12px 40px rgba(220, 38, 38, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border-color: var(--crimson-light);
+    }
+
+    /* Respect prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>`;
 }
 

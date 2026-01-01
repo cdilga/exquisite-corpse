@@ -10,6 +10,7 @@
     "deploy:staging": "wrangler deploy --env staging",
     "tail": "wrangler tail",
     "tail:beta": "wrangler tail --env beta",
+    "test:headed": "playwright test --ui --headed",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",

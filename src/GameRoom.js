@@ -86,12 +86,24 @@ export class GameRoom {
         await this.handleJoin(playerId, data.playerName);
         break;
 
+      case 'update_game_settings':
+        await this.handleUpdateGameSettings(playerId, data);
+        break;
+
       case 'start_game':
         await this.handleStartGame(playerId);
         break;
 
       case 'submit_sentence':
         await this.handleSubmitSentence(playerId, data.sentence);
+        break;
+
+      case 'start_tts_playback':
+        await this.handleStartTTS(playerId);
+        break;
+
+      case 'tts_sentence_complete':
+        await this.handleTTSSentenceComplete(playerId, data.sentenceIndex);
         break;
 
       default:
@@ -153,7 +165,10 @@ export class GameRoom {
 
     state.gameStarted = true;
     state.currentTurnIndex = 0;
+    state.currentRound = 1;
     state.story = [];
+    // Calculate total turns based on players and rounds
+    state.totalTurns = state.players.length * state.roundsPerPlayer;
     await this.saveGameState(state);
 
     // Notify all players game has started
@@ -168,7 +183,11 @@ export class GameRoom {
       type: 'your_turn',
       previousSentence: null,
       turnNumber: 1,
-      totalPlayers: state.players.length,
+      totalTurns: state.totalTurns,
+      roundInfo: {
+        currentRound: 1,
+        totalRounds: state.roundsPerPlayer,
+      },
     });
   }
 
@@ -184,7 +203,8 @@ export class GameRoom {
     }
 
     // Verify it's this player's turn
-    const currentPlayer = state.players[state.currentTurnIndex];
+    const currentPlayerIndex = state.currentTurnIndex % state.players.length;
+    const currentPlayer = state.players[currentPlayerIndex];
     if (currentPlayer.id !== playerId) {
       this.sendToPlayer(playerId, {
         type: 'error',
@@ -201,18 +221,21 @@ export class GameRoom {
       return;
     }
 
-    // Add sentence to story
+    // Add sentence to story with round tracking
+    const currentRound = Math.floor(state.currentTurnIndex / state.players.length) + 1;
     state.story.push({
       playerId: playerId,
       playerName: currentPlayer.name,
       sentence: sentence.trim(),
+      roundNumber: currentRound,
+      turnNumber: state.currentTurnIndex + 1,
     });
 
     // Move to next turn
     state.currentTurnIndex++;
 
-    // Check if game is complete (everyone has gone)
-    if (state.currentTurnIndex >= state.players.length) {
+    // Check if game is complete (all rounds done)
+    if (state.currentTurnIndex >= state.totalTurns) {
       state.gameComplete = true;
       await this.saveGameState(state);
 
@@ -222,9 +245,12 @@ export class GameRoom {
         story: state.story,
       });
     } else {
+      // Calculate current round for next turn
+      state.currentRound = Math.floor(state.currentTurnIndex / state.players.length) + 1;
       await this.saveGameState(state);
 
-      const nextPlayer = state.players[state.currentTurnIndex];
+      const nextPlayerIndex = state.currentTurnIndex % state.players.length;
+      const nextPlayer = state.players[nextPlayerIndex];
       const previousSentence = state.story[state.story.length - 1].sentence;
 
       // Tell next player it's their turn (with only previous sentence)
@@ -232,7 +258,11 @@ export class GameRoom {
         type: 'your_turn',
         previousSentence: previousSentence,
         turnNumber: state.currentTurnIndex + 1,
-        totalPlayers: state.players.length,
+        totalTurns: state.totalTurns,
+        roundInfo: {
+          currentRound: state.currentRound,
+          totalRounds: state.roundsPerPlayer,
+        },
       });
 
       // Tell everyone else to wait
@@ -242,7 +272,11 @@ export class GameRoom {
             type: 'waiting_for_turn',
             currentPlayerName: nextPlayer.name,
             turnNumber: state.currentTurnIndex + 1,
-            totalPlayers: state.players.length,
+            totalTurns: state.totalTurns,
+            roundInfo: {
+              currentRound: state.currentRound,
+              totalRounds: state.roundsPerPlayer,
+            },
           });
         }
       });
@@ -264,6 +298,80 @@ export class GameRoom {
     }
   }
 
+  async handleUpdateGameSettings(playerId, data) {
+    const state = await this.getGameState();
+
+    // Only host can update settings
+    if (state.players.length === 0 || state.players[0].id !== playerId) {
+      this.sendToPlayer(playerId, {
+        type: 'error',
+        message: 'Only the host can change game settings',
+      });
+      return;
+    }
+
+    if (state.gameStarted) {
+      this.sendToPlayer(playerId, {
+        type: 'error',
+        message: 'Cannot change settings after game has started',
+      });
+      return;
+    }
+
+    const rounds = parseInt(data.roundsPerPlayer);
+    if (!rounds || rounds < 1 || rounds > 10) {
+      this.sendToPlayer(playerId, {
+        type: 'error',
+        message: 'Invalid number of rounds (1-10)',
+      });
+      return;
+    }
+
+    state.roundsPerPlayer = rounds;
+    await this.saveGameState(state);
+
+    this.broadcast({
+      type: 'game_settings_updated',
+      roundsPerPlayer: rounds,
+      totalTurns: state.players.length * rounds,
+    });
+  }
+
+  async handleStartTTS(playerId) {
+    const state = await this.getGameState();
+
+    if (!state.gameComplete) {
+      this.sendToPlayer(playerId, {
+        type: 'error',
+        message: 'Game must be complete to play audio',
+      });
+      return;
+    }
+
+    const startTime = Date.now() + 1000; // 1 second buffer for sync
+
+    state.ttsState = {
+      isPlaying: true,
+      startedBy: playerId,
+      startTime: startTime,
+      currentSentenceIndex: 0,
+    };
+
+    await this.saveGameState(state);
+
+    this.broadcast({
+      type: 'tts_playback_start',
+      startTime: startTime,
+    });
+  }
+
+  async handleTTSSentenceComplete(playerId, sentenceIndex) {
+    const state = await this.getGameState();
+
+    state.ttsState.currentSentenceIndex = sentenceIndex + 1;
+    await this.saveGameState(state);
+  }
+
   async getGameState() {
     let state = await this.state.storage.get('gameState');
     if (!state) {
@@ -275,6 +383,17 @@ export class GameRoom {
         currentTurnIndex: 0,
         gameStarted: false,
         gameComplete: false,
+        // NEW: Configurable rounds
+        roundsPerPlayer: 1,
+        currentRound: 0,
+        totalTurns: 0,
+        // NEW: TTS state
+        ttsState: {
+          isPlaying: false,
+          startedBy: null,
+          startTime: null,
+          currentSentenceIndex: 0,
+        },
       };
       await this.state.storage.put('gameState', state);
     }

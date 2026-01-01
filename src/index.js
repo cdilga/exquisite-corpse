@@ -1,32 +1,45 @@
+import { Hono } from 'hono';
 import { GameRoom } from './GameRoom.js';
 import { getHomePage } from './pages/home.js';
+import { handleShareStory, handleViewSharedStory } from './storySharing.js';
+
+const app = new Hono();
 
 export { GameRoom };
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+// Middleware to attach environment
+app.use('*', (c, next) => {
+  c.env = c.env || {};
+  return next();
+});
 
-    // Route to game room Durable Object
-    if (url.pathname.startsWith('/room/')) {
-      const roomCode = url.pathname.split('/')[2];
-      return await handleRoom(request, env, roomCode);
-    }
+// Home page
+app.get('/', (c) => {
+  return c.html(getHomePage());
+});
 
-    // Serve home page
-    if (url.pathname === '/') {
-      return new Response(getHomePage(), {
-        headers: { 'Content-Type': 'text/html' },
-      });
-    }
+// API: Share story
+app.post('/api/share-story', async (c) => {
+  const request = c.req.raw;
+  const env = c.env;
+  return handleShareStory(request, env);
+});
 
-    return new Response('Not Found', { status: 404 });
-  },
-};
+// View shared story
+app.get('/story/:storyId', async (c) => {
+  const storyId = c.req.param('storyId');
+  const env = c.env;
+  return handleViewSharedStory(storyId, env);
+});
 
-async function handleRoom(request, env, roomCode) {
+// Game room WebSocket/HTTP endpoint
+app.all('/room/:roomCode', async (c) => {
+  const roomCode = c.req.param('roomCode');
+  const env = c.env;
+  const request = c.req.raw;
+
   if (!roomCode || roomCode.length !== 4) {
-    return new Response('Invalid room code', { status: 400 });
+    return c.text('Invalid room code', 400);
   }
 
   // Get Durable Object ID from room code
@@ -35,4 +48,11 @@ async function handleRoom(request, env, roomCode) {
 
   // Forward request to Durable Object
   return stub.fetch(request);
-}
+});
+
+// 404 handler
+app.notFound((c) => {
+  return c.text('Not Found', 404);
+});
+
+export default app;

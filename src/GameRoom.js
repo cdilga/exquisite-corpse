@@ -62,7 +62,8 @@ export class GameRoom {
     webSocket.addEventListener('message', async (msg) => {
       try {
         const data = JSON.parse(msg.data);
-        await this.handleMessage(playerId, data);
+        // Pass playerId and webSocket for reconnection handling
+        await this.handleMessage(playerId, data, webSocket);
       } catch (error) {
         webSocket.send(JSON.stringify({
           type: 'error',
@@ -78,12 +79,12 @@ export class GameRoom {
     });
   }
 
-  async handleMessage(playerId, data) {
+  async handleMessage(playerId, data, webSocket) {
     const state = await this.getGameState();
 
     switch (data.type) {
       case 'join':
-        await this.handleJoin(playerId, data.playerName);
+        await this.handleJoin(playerId, data.playerName, data.sessionId, data.isReconnection, webSocket);
         break;
 
       case 'update_game_settings':
@@ -114,10 +115,97 @@ export class GameRoom {
     }
   }
 
-  async handleJoin(playerId, playerName) {
+  async handleJoin(playerId, playerName, sessionId, isReconnection, webSocket) {
     const state = await this.getGameState();
 
+    // Check for reconnection by sessionId
+    let reconnectingPlayer = null;
+    if (sessionId) {
+      reconnectingPlayer = state.players.find(p => p.sessionId === sessionId);
+    }
+
+    if (reconnectingPlayer) {
+      // This is a reconnection - update with new connection ID
+      const oldPlayerId = reconnectingPlayer.id;
+      reconnectingPlayer.id = playerId;
+      reconnectingPlayer.connected = true;
+      reconnectingPlayer.lastSeen = Date.now();
+
+      // Update sessions map: remove old connection if it still exists, add new one
+      if (oldPlayerId !== playerId && this.sessions.has(oldPlayerId)) {
+        this.sessions.delete(oldPlayerId);
+      }
+      this.sessions.set(playerId, webSocket);
+
+      await this.saveGameState(state);
+
+      // If game is in progress, send full game state
+      if (state.gameStarted) {
+        // Determine current player and their turn
+        const currentPlayerIndex = state.currentTurnIndex % state.players.length;
+        const currentPlayer = state.players[currentPlayerIndex];
+
+        if (currentPlayer.id === playerId) {
+          // This player's turn - give them the context they need to continue
+          const previousSentence = state.story.length > 0 ? state.story[state.story.length - 1].sentence : null;
+          this.sendToPlayer(playerId, {
+            type: 'reconnected',
+            gameState: {
+              gameStarted: true,
+              currentTurn: true,
+              previousSentence: previousSentence,
+              turnNumber: state.currentTurnIndex + 1,
+              totalTurns: state.totalTurns,
+              roundInfo: {
+                currentRound: state.currentRound,
+                totalRounds: state.roundsPerPlayer,
+              },
+              players: state.players,
+            },
+          });
+        } else {
+          // Waiting for another player - keep them in the loop
+          this.sendToPlayer(playerId, {
+            type: 'reconnected',
+            gameState: {
+              gameStarted: true,
+              currentTurn: false,
+              currentPlayerName: currentPlayer.name,
+              turnNumber: state.currentTurnIndex + 1,
+              totalTurns: state.totalTurns,
+              roundInfo: {
+                currentRound: state.currentRound,
+                totalRounds: state.roundsPerPlayer,
+              },
+              players: state.players,
+            },
+          });
+        }
+      } else {
+        // Game hasn't started yet, send lobby state
+        this.sendToPlayer(playerId, {
+          type: 'reconnected',
+          gameState: {
+            gameStarted: false,
+            players: state.players,
+            roomCode: state.roomCode,
+          },
+        });
+      }
+
+      // Notify other players about the reconnection
+      this.broadcast({
+        type: 'player_reconnected',
+        playerName: reconnectingPlayer.name,
+        players: state.players,
+      });
+
+      return;
+    }
+
+    // New player joining (not a reconnection)
     if (state.gameStarted) {
+      // Reject new players once game has started
       this.sendToPlayer(playerId, {
         type: 'error',
         message: 'Game already started',
@@ -125,19 +213,31 @@ export class GameRoom {
       return;
     }
 
-    // Add player if not already joined
-    const existingPlayer = state.players.find(p => p.id === playerId);
-    if (!existingPlayer) {
-      state.players.push({
-        id: playerId,
-        name: playerName || `Player ${state.players.length + 1}`,
-      });
-      await this.saveGameState(state);
-    }
+    // Create new player with generated sessionId if not provided
+    const newPlayer = {
+      id: playerId,
+      name: playerName || `Player ${state.players.length + 1}`,
+      sessionId: sessionId || crypto.randomUUID(),
+      connected: true,
+      lastSeen: Date.now(),
+    };
 
-    // Send updated state to all players
+    state.players.push(newPlayer);
+    await this.saveGameState(state);
+
+    // Send join success to the new player
+    this.sendToPlayer(playerId, {
+      type: 'join_success',
+      playerId: playerId,
+      isHost: state.players.length === 1, // First player is host
+      players: state.players,
+      roomCode: state.roomCode,
+    });
+
+    // Notify other players about the new player
     this.broadcast({
       type: 'player_joined',
+      playerName: newPlayer.name,
       players: state.players,
       roomCode: state.roomCode,
     });
@@ -184,10 +284,20 @@ export class GameRoom {
       previousSentence: null,
       turnNumber: 1,
       totalTurns: state.totalTurns,
-      roundInfo: {
+      currentRound: 1,
+      totalRounds: state.roundsPerPlayer,
+    });
+
+    // Tell other players to wait
+    state.players.slice(1).forEach(player => {
+      this.sendToPlayer(player.id, {
+        type: 'waiting_turn',
+        currentPlayerName: state.players[0].name,
+        turnNumber: 1,
+        totalTurns: state.totalTurns,
         currentRound: 1,
         totalRounds: state.roundsPerPlayer,
-      },
+      });
     });
   }
 
@@ -241,7 +351,7 @@ export class GameRoom {
 
       // Broadcast complete story to everyone
       this.broadcast({
-        type: 'game_complete',
+        type: 'story_complete',
         story: state.story,
       });
     } else {
@@ -259,24 +369,20 @@ export class GameRoom {
         previousSentence: previousSentence,
         turnNumber: state.currentTurnIndex + 1,
         totalTurns: state.totalTurns,
-        roundInfo: {
-          currentRound: state.currentRound,
-          totalRounds: state.roundsPerPlayer,
-        },
+        currentRound: state.currentRound,
+        totalRounds: state.roundsPerPlayer,
       });
 
       // Tell everyone else to wait
       state.players.forEach(player => {
         if (player.id !== nextPlayer.id) {
           this.sendToPlayer(player.id, {
-            type: 'waiting_for_turn',
+            type: 'waiting_turn',
             currentPlayerName: nextPlayer.name,
             turnNumber: state.currentTurnIndex + 1,
             totalTurns: state.totalTurns,
-            roundInfo: {
-              currentRound: state.currentRound,
-              totalRounds: state.roundsPerPlayer,
-            },
+            currentRound: state.currentRound,
+            totalRounds: state.roundsPerPlayer,
           });
         }
       });
@@ -286,13 +392,34 @@ export class GameRoom {
   async handlePlayerDisconnect(playerId) {
     const state = await this.getGameState();
 
-    // Remove player from list if game hasn't started
+    // Find the disconnected player by current playerId
+    let player = state.players.find(p => p.id === playerId);
+
+    // If not found by current ID, it might be an old connection - remove stale session
+    if (!player) {
+      return;
+    }
+
     if (!state.gameStarted) {
+      // Pre-game: Remove player entirely
       state.players = state.players.filter(p => p.id !== playerId);
       await this.saveGameState(state);
 
       this.broadcast({
         type: 'player_left',
+        players: state.players,
+      });
+    } else {
+      // During game: Mark as offline instead of removing
+      // This allows them to reconnect and resume playing
+      player.connected = false;
+      player.lastSeen = Date.now();
+      await this.saveGameState(state);
+
+      // Notify other players about the disconnection
+      this.broadcast({
+        type: 'player_disconnected',
+        playerName: player.name,
         players: state.players,
       });
     }

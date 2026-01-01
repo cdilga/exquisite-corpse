@@ -534,7 +534,7 @@ export function getHomePage() {
     function showReconnectionBanner(attempt) {
       elements.reconnectionBanner.classList.remove('hidden', 'success');
       elements.reconnectionBanner.classList.add('reconnection-banner');
-      elements.reconnectionStatusText.textContent = \`Reconnecting... (attempt \${attempt}/\${MAX_RECONNECT_ATTEMPTS})\`;
+      elements.reconnectionStatusText.textContent = 'Reconnecting... (attempt ' + attempt + '/' + MAX_RECONNECT_ATTEMPTS + ')';
     }
 
     function hideReconnectionBanner() {
@@ -585,10 +585,10 @@ export function getHomePage() {
 
     function connectToRoom(code) {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = \`\${protocol}//\${location.host}/room/\${code}\`;
+      const wsUrl = protocol + '//' + location.host + '/room/' + code;
 
       // Generate or retrieve sessionId from localStorage
-      const storageKey = \`ec-session-\${code}\`;
+      const storageKey = 'ec-session-' + code;
       let storedSessionId = localStorage.getItem(storageKey);
 
       if (!storedSessionId) {
@@ -628,7 +628,7 @@ export function getHomePage() {
         if (roomCode && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           showReconnectionBanner(reconnectAttempts + 1);
           reconnectionTimer = setTimeout(() => {
-            console.log(\`Attempting to reconnect... (attempt \${reconnectAttempts + 1}/\${MAX_RECONNECT_ATTEMPTS})\`);
+            console.log('Attempting to reconnect... (attempt ' + (reconnectAttempts + 1) + '/' + MAX_RECONNECT_ATTEMPTS + ')');
             reconnectAttempts++;
             connectToRoom(roomCode);
           }, RECONNECT_DELAY);
@@ -712,7 +712,7 @@ export function getHomePage() {
           // Show offline indicator if current player is offline
           const isCurrentPlayerOffline = message.currentPlayerId && offlinePlayers.has(message.currentPlayerId);
           const playerNameDisplay = isCurrentPlayerOffline ?
-            \`<span class="text-2xl">🔌</span> \${message.currentPlayerName} <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>\` :
+            '<span class="text-2xl">🔌</span> ' + message.currentPlayerName + ' <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>' :
             message.currentPlayerName;
 
           elements.currentPlayerName.innerHTML = playerNameDisplay;
@@ -742,22 +742,22 @@ export function getHomePage() {
 
         case 'player_disconnected':
           // Another player disconnected - show indicator
-          console.log(\`\${message.playerName} has disconnected\`);
+          console.log(message.playerName + ' has disconnected');
           if (message.playerId) {
             offlinePlayers.add(message.playerId);
           }
           updatePlayersList(message.players);
-          showError(\`\${message.playerName} has disconnected\`);
+          showError(message.playerName + ' has disconnected');
           break;
 
         case 'player_reconnected':
           // Another player reconnected
-          console.log(\`\${message.playerName} has reconnected\`);
+          console.log(message.playerName + ' has reconnected');
           if (message.playerId) {
             offlinePlayers.delete(message.playerId);
           }
           updatePlayersList(message.players);
-          showSuccess(\`\${message.playerName} has reconnected\`);
+          showSuccess(message.playerName + ' has reconnected');
           break;
 
         case 'error':
@@ -817,7 +817,7 @@ export function getHomePage() {
         // Show offline indicator if current player is offline
         const isCurrentPlayerOffline = gameState.currentPlayerId && offlinePlayers.has(gameState.currentPlayerId);
         const playerNameDisplay = isCurrentPlayerOffline ?
-          \`<span class="text-2xl">🔌</span> \${gameState.currentPlayerName} <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>\` :
+          '<span class="text-2xl">🔌</span> ' + gameState.currentPlayerName + ' <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>' :
           gameState.currentPlayerName;
 
         elements.currentPlayerName.innerHTML = playerNameDisplay;
@@ -840,19 +840,20 @@ export function getHomePage() {
         const offlineBadge = isOffline ?
           '<span class="offline-badge bg-gray-400" title="Offline">❌ Offline</span>' :
           '';
+        const opacityClass = isOffline ? 'opacity-60' : '';
+        const icon = isOffline ? '🔌' : (index === 0 ? '👑' : '👤');
+        const hostBadge = index === 0 ? '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Host</span>' : '';
 
-        return \`
-          <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm \${isOffline ? 'opacity-60' : ''}">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">\${isOffline ? '🔌' : (index === 0 ? '👑' : '👤')}</span>
-              <span class="font-medium">\${player.name}</span>
-              \${offlineBadge}
-            </div>
-            <div class="flex gap-2">
-              \${index === 0 ? '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Host</span>' : ''}
-            </div>
-          </div>
-        \`;
+        return '<div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm ' + opacityClass + '">' +
+          '<div class="flex items-center gap-2">' +
+          '<span class="text-2xl">' + icon + '</span>' +
+          '<span class="font-medium">' + player.name + '</span>' +
+          offlineBadge +
+          '</div>' +
+          '<div class="flex gap-2">' +
+          hostBadge +
+          '</div>' +
+          '</div>';
       }).join('');
 
       // Update rounds selector state
@@ -870,8 +871,8 @@ export function getHomePage() {
     function updateRoundsPreview(playerCount = null) {
       const count = playerCount || document.querySelectorAll('#players-list > div').length;
       const totalTurns = count * selectedRounds;
-      document.getElementById('total-turns-preview').textContent = \`\${totalTurns} total turns\`;
-      document.getElementById('story-length-preview').textContent = \`\${totalTurns} sentences\`;
+      document.getElementById('total-turns-preview').textContent = totalTurns + ' total turns';
+      document.getElementById('story-length-preview').textContent = totalTurns + ' sentences';
     }
 
     function startGame() {
@@ -929,7 +930,7 @@ export function getHomePage() {
       const voices = window.speechSynthesis.getVoices();
       elements.voiceSelector.innerHTML = '<option>Select voice...</option>' +
         voices.filter(v => v.lang && v.lang.startsWith('en')).map(v =>
-          \`<option value="\${v.name}">\${v.name} (\${v.lang})</option>\`
+          '<option value="' + v.name + '">' + v.name + ' (' + v.lang + ')</option>'
         ).join('');
 
       selectedVoice = voices.find(v => v.default) || voices[0];
@@ -1029,12 +1030,12 @@ export function getHomePage() {
 
     // Export Functions
     function formatStoryAsText() {
-      let text = '=== EXQUISITE CORPSE STORY ===\\n\\n';
+      let text = '=== EXQUISITE CORPSE STORY ===\n\n';
       currentStory.forEach((entry, index) => {
-        text += \`\${index + 1}. [\${entry.playerName}] \${entry.sentence}\\n\\n\`;
+        text += (index + 1) + '. [' + entry.playerName + '] ' + entry.sentence + '\n\n';
       });
-      text += \`\\n=== Created with Exquisite Corpse ===\\n\`;
-      text += \`Generated on \${new Date().toLocaleDateString()}\`;
+      text += '\n=== Created with Exquisite Corpse ===\n';
+      text += 'Generated on ' + new Date().toLocaleDateString();
       return text;
     }
 
@@ -1053,7 +1054,7 @@ export function getHomePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = \`exquisite-corpse-\${Date.now()}.txt\`;
+      a.download = 'exquisite-corpse-' + Date.now() + '.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1114,7 +1115,7 @@ export function getHomePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = \`exquisite-corpse-\${Date.now()}.html\`;
+      a.download = 'exquisite-corpse-' + Date.now() + '.html';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1140,7 +1141,7 @@ export function getHomePage() {
         if (!response.ok) throw new Error('Failed to generate link');
 
         const data = await response.json();
-        const shareUrl = \`\${location.origin}/story/\${data.storyId}\`;
+        const shareUrl = location.origin + '/story/' + data.storyId;
 
         elements.shareLinkResult.classList.remove('hidden');
         elements.shareLinkUrl.value = shareUrl;

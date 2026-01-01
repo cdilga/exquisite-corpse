@@ -563,9 +563,139 @@ function getScriptSection() {
 
     function updateTurnsPreview() {
       const totalTurns = selectedRounds * 2; // Assuming 2 players for now
-      elements.document.getElementById('total-turns-preview').textContent = totalTurns + ' total turns';
-      elements.document.getElementById('story-length-preview').textContent = totalTurns + ' sentences';
+      document.getElementById('total-turns-preview').textContent = totalTurns + ' total turns';
+      document.getElementById('story-length-preview').textContent = totalTurns + ' sentences';
     }
+
+    // Export functions
+    function formatStoryAsText() {
+      let text = '=== EXQUISITE CORPSE STORY ===\n\n';
+      currentStory.forEach((entry, i) => {
+        text += (i + 1) + '. [' + entry.playerName + '] ' + entry.sentence + '\n\n';
+      });
+      text += '\n=== Created with Exquisite Corpse ===\n';
+      text += 'Generated on ' + new Date().toLocaleDateString();
+      return text;
+    }
+
+    function copyToClipboard() {
+      const text = formatStoryAsText();
+      navigator.clipboard.writeText(text).then(() => {
+        showSuccess('Story copied to clipboard!');
+      }).catch(() => {
+        showError('Failed to copy to clipboard');
+      });
+    }
+
+    function downloadTxt() {
+      const text = formatStoryAsText();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'exquisite-corpse-' + Date.now() + '.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Story downloaded as TXT!');
+    }
+
+    function formatStoryAsHTML() {
+      const storyHtml = currentStory.map((entry, i) => {
+        return '<div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+          '<span class="text-lg font-bold text-purple-600">' + (i + 1) + '.</span>' +
+          '<span class="text-sm font-semibold text-gray-700">' + entry.playerName + '</span>' +
+          '</div>' +
+          '<p class="text-gray-800 text-lg">' + entry.sentence + '</p>' +
+          '</div>';
+      }).join('');
+
+      return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+        '<meta charset="UTF-8">\n' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+        '<title>Exquisite Corpse Story</title>\n' +
+        '<script src="https://cdn.tailwindcss.com"><\/script>\n' +
+        '<style>body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }</style>\n' +
+        '</head>\n<body class="p-8">\n' +
+        '<div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">\n' +
+        '<h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>\n' +
+        '<p class="text-center text-gray-600 mb-8">A Collaborative Story</p>\n' +
+        '<div class="space-y-4 mb-8">\n' + storyHtml + '</div>\n' +
+        '<div class="text-center">\n' +
+        '<p>Created ' + new Date().toLocaleDateString() + '</p>\n' +
+        '<p class="mt-2">Made with ❤️ using Exquisite Corpse</p>\n' +
+        '</div>\n' +
+        '</div>\n</body>\n</html>';
+    }
+
+    function downloadHtml() {
+      const html = formatStoryAsHTML();
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'exquisite-corpse-' + Date.now() + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Story downloaded as HTML!');
+    }
+
+    async function generateShareLink() {
+      elements.generateLinkBtn.disabled = true;
+      elements.generateLinkBtn.innerHTML = '⏳ Generating...';
+
+      try {
+        const response = await fetch('/api/share-story', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            story: currentStory,
+            roomCode: roomCode,
+            createdAt: Date.now(),
+          }),
+        });
+
+        if (!response.ok) throw new Error('Failed to generate link');
+
+        const data = await response.json();
+        const shareUrl = location.origin + '/story/' + data.storyId;
+
+        elements.shareLinkResult.classList.remove('hidden');
+        elements.shareLinkUrl.value = shareUrl;
+
+        showSuccess('Share link generated!');
+        elements.generateLinkBtn.innerHTML = '✅ Link Created!';
+        setTimeout(() => {
+          elements.generateLinkBtn.disabled = false;
+          elements.generateLinkBtn.innerHTML = '🔗 Share Link';
+        }, 3000);
+
+      } catch (error) {
+        showError('Failed to generate share link');
+        elements.generateLinkBtn.disabled = false;
+        elements.generateLinkBtn.innerHTML = '🔗 Share Link';
+      }
+    }
+
+    function copyShareLink() {
+      const url = elements.shareLinkUrl.value;
+      navigator.clipboard.writeText(url).then(() => {
+        showSuccess('Share link copied!');
+      }).catch(() => {
+        showError('Failed to copy link');
+      });
+    }
+
+    // Attach export button listeners
+    elements.copyClipboardBtn.addEventListener('click', copyToClipboard);
+    elements.downloadTxtBtn.addEventListener('click', downloadTxt);
+    elements.downloadHtmlBtn.addEventListener('click', downloadHtml);
+    elements.generateLinkBtn.addEventListener('click', generateShareLink);
+    elements.copyShareLinkBtn.addEventListener('click', copyShareLink);
 
     console.log('✅ Game script loaded');
   `;

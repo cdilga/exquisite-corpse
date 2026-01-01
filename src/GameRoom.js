@@ -351,7 +351,7 @@ export class GameRoom {
 
       // Broadcast complete story to everyone
       this.broadcast({
-        type: 'game_complete',
+        type: 'story_complete',
         story: state.story,
       });
     } else {
@@ -369,24 +369,20 @@ export class GameRoom {
         previousSentence: previousSentence,
         turnNumber: state.currentTurnIndex + 1,
         totalTurns: state.totalTurns,
-        roundInfo: {
-          currentRound: state.currentRound,
-          totalRounds: state.roundsPerPlayer,
-        },
+        currentRound: state.currentRound,
+        totalRounds: state.roundsPerPlayer,
       });
 
       // Tell everyone else to wait
       state.players.forEach(player => {
         if (player.id !== nextPlayer.id) {
           this.sendToPlayer(player.id, {
-            type: 'waiting_for_turn',
+            type: 'waiting_turn',
             currentPlayerName: nextPlayer.name,
             turnNumber: state.currentTurnIndex + 1,
             totalTurns: state.totalTurns,
-            roundInfo: {
-              currentRound: state.currentRound,
-              totalRounds: state.roundsPerPlayer,
-            },
+            currentRound: state.currentRound,
+            totalRounds: state.roundsPerPlayer,
           });
         }
       });

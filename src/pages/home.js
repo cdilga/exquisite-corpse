@@ -1,5 +1,5 @@
 export function getHomePage() {
-  return `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -85,6 +85,55 @@ export function getHomePage() {
       transform: scale(0.95);
     }
 
+    /* Reconnection Banner */
+    .reconnection-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(90deg, #f59e0b 0%, #dc2626 100%);
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      z-index: 1000;
+      animation: slideDown 0.3s ease-out;
+    }
+    @keyframes slideDown {
+      from {
+        transform: translateY(-100%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    .reconnection-banner.success {
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    }
+
+    .reconnection-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    }
+
+    .offline-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background-color: rgba(0, 0, 0, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
     /* Respect prefers-reduced-motion */
     @media (prefers-reduced-motion: reduce) {
       * {
@@ -95,6 +144,16 @@ export function getHomePage() {
   </style>
 </head>
 <body class="p-4">
+  <!-- Reconnection Banner -->
+  <div id="reconnection-banner" class="hidden reconnection-banner">
+    <div class="flex items-center gap-3 flex-1">
+      <div class="reconnection-spinner"></div>
+      <span id="reconnection-status-text">Reconnecting...</span>
+    </div>
+    <button id="manual-reconnect-btn" class="bg-white text-red-600 font-bold px-4 py-2 rounded hover:bg-gray-100 transition text-sm">
+      Reconnect Now
+    </button>
+  </div>
   <div class="max-w-2xl mx-auto">
     <!-- Landing Screen -->
     <div id="landing-screen" class="bg-white rounded-2xl shadow-2xl p-8 fade-in">
@@ -302,6 +361,13 @@ export function getHomePage() {
     let roomCode = null;
     let isHost = false;
     let selectedRounds = 1;
+    let sessionId = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 2000; // 2 seconds
+    let reconnectionTimer = null;
+    let isConnected = false;
+    let offlinePlayers = new Set();
 
     // TTS variables
     let currentStory = [];
@@ -343,6 +409,10 @@ export function getHomePage() {
       storyContainer: document.getElementById('story-container'),
       playAgainBtn: document.getElementById('play-again-btn'),
       errorMessage: document.getElementById('error-message'),
+      // Reconnection elements
+      reconnectionBanner: document.getElementById('reconnection-banner'),
+      reconnectionStatusText: document.getElementById('reconnection-status-text'),
+      manualReconnectBtn: document.getElementById('manual-reconnect-btn'),
       // New elements
       gameSettings: document.getElementById('game-settings'),
       playAudioBtn: document.getElementById('play-audio-btn'),
@@ -376,6 +446,8 @@ export function getHomePage() {
       }
     });
     elements.playAgainBtn.addEventListener('click', () => location.reload());
+    // Manual reconnect button
+    elements.manualReconnectBtn.addEventListener('click', forceReconnect);
 
     // Rounds selector
     document.querySelectorAll('.rounds-btn').forEach(btn => {
@@ -459,6 +531,34 @@ export function getHomePage() {
       }, 3000);
     }
 
+    function showReconnectionBanner(attempt) {
+      elements.reconnectionBanner.classList.remove('hidden', 'success');
+      elements.reconnectionBanner.classList.add('reconnection-banner');
+      elements.reconnectionStatusText.textContent = \`Reconnecting... (attempt \${attempt}/\${MAX_RECONNECT_ATTEMPTS})\`;
+    }
+
+    function hideReconnectionBanner() {
+      elements.reconnectionBanner.classList.add('hidden');
+    }
+
+    function showReconnectionSuccess() {
+      elements.reconnectionBanner.classList.remove('hidden');
+      elements.reconnectionBanner.classList.add('success');
+      elements.reconnectionStatusText.textContent = 'Reconnected!';
+      setTimeout(() => {
+        elements.reconnectionBanner.classList.add('hidden');
+      }, 3000);
+    }
+
+    function forceReconnect() {
+      if (reconnectionTimer) {
+        clearTimeout(reconnectionTimer);
+      }
+      reconnectAttempts = 0;
+      console.log('Forcing immediate reconnection...');
+      connectToRoom(roomCode);
+    }
+
     function createRoom() {
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       roomCode = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
@@ -487,10 +587,25 @@ export function getHomePage() {
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = \`\${protocol}//\${location.host}/room/\${code}\`;
 
+      // Generate or retrieve sessionId from localStorage
+      const storageKey = \`ec-session-\${code}\`;
+      let storedSessionId = localStorage.getItem(storageKey);
+
+      if (!storedSessionId) {
+        // Generate new sessionId for first connection
+        sessionId = crypto.randomUUID();
+        localStorage.setItem(storageKey, sessionId);
+      } else {
+        sessionId = storedSessionId;
+      }
+
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         console.log('Connected to room:', code);
+        isConnected = true;
+        reconnectAttempts = 0; // Reset attempts on successful connection
+        hideReconnectionBanner();
       };
 
       ws.onmessage = (event) => {
@@ -500,11 +615,26 @@ export function getHomePage() {
 
       ws.onerror = (error) => {
         console.error('WebSocket error:', error);
-        showError('Connection error. Please try again.');
+        isConnected = false;
+        if (reconnectAttempts === 0) {
+          showError('Connection error. Attempting to reconnect...');
+        }
       };
 
       ws.onclose = () => {
         console.log('Disconnected from room');
+        isConnected = false;
+        // Attempt to reconnect if game is in progress
+        if (roomCode && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          showReconnectionBanner(reconnectAttempts + 1);
+          reconnectionTimer = setTimeout(() => {
+            console.log(\`Attempting to reconnect... (attempt \${reconnectAttempts + 1}/\${MAX_RECONNECT_ATTEMPTS})\`);
+            reconnectAttempts++;
+            connectToRoom(roomCode);
+          }, RECONNECT_DELAY);
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          showError('Failed to reconnect. Please refresh the page to try again.');
+        }
       };
     }
 
@@ -517,6 +647,8 @@ export function getHomePage() {
           ws.send(JSON.stringify({
             type: 'join',
             playerName: playerName,
+            sessionId: sessionId,
+            isReconnection: !!sessionId, // Mark as reconnection if session exists
           }));
           break;
 
@@ -576,7 +708,14 @@ export function getHomePage() {
         case 'waiting_for_turn':
           elements.yourTurn.classList.add('hidden');
           elements.waitingTurn.classList.remove('hidden');
-          elements.currentPlayerName.textContent = message.currentPlayerName;
+
+          // Show offline indicator if current player is offline
+          const isCurrentPlayerOffline = message.currentPlayerId && offlinePlayers.has(message.currentPlayerId);
+          const playerNameDisplay = isCurrentPlayerOffline ?
+            \`<span class="text-2xl">🔌</span> \${message.currentPlayerName} <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>\` :
+            message.currentPlayerName;
+
+          elements.currentPlayerName.innerHTML = playerNameDisplay;
           elements.waitingTurnNumber.textContent = message.turnNumber;
           elements.waitingTotalTurns.textContent = message.totalTurns;
 
@@ -596,9 +735,99 @@ export function getHomePage() {
           handleTTSPlayback(message);
           break;
 
+        case 'reconnected':
+          // Handle reconnection - restore game state
+          handleReconnection(message.gameState);
+          break;
+
+        case 'player_disconnected':
+          // Another player disconnected - show indicator
+          console.log(\`\${message.playerName} has disconnected\`);
+          if (message.playerId) {
+            offlinePlayers.add(message.playerId);
+          }
+          updatePlayersList(message.players);
+          showError(\`\${message.playerName} has disconnected\`);
+          break;
+
+        case 'player_reconnected':
+          // Another player reconnected
+          console.log(\`\${message.playerName} has reconnected\`);
+          if (message.playerId) {
+            offlinePlayers.delete(message.playerId);
+          }
+          updatePlayersList(message.players);
+          showSuccess(\`\${message.playerName} has reconnected\`);
+          break;
+
         case 'error':
           showError(message.message);
           break;
+      }
+    }
+
+    function handleReconnection(gameState) {
+      // Restore game state after reconnection
+      console.log('Reconnected! Restoring game state:', gameState);
+      showReconnectionSuccess();
+
+      // Update offline players set from server state
+      if (gameState.offlinePlayers) {
+        offlinePlayers = new Set(gameState.offlinePlayers);
+      }
+
+      if (!gameState.gameStarted) {
+        // Game in lobby - show lobby screen
+        showScreen('lobby');
+        updatePlayersList(gameState.players);
+        elements.roomCodeDisplay.textContent = gameState.roomCode;
+      } else if (gameState.currentTurn) {
+        // It's this player's turn
+        showScreen('game');
+        elements.yourTurn.classList.remove('hidden');
+        elements.waitingTurn.classList.add('hidden');
+        elements.sentenceInput.value = '';
+        elements.sentenceInput.focus();
+        elements.turnNumber.textContent = gameState.turnNumber;
+        elements.totalTurns.textContent = gameState.totalTurns;
+
+        if (gameState.roundInfo) {
+          elements.turnRound.textContent = gameState.roundInfo.currentRound;
+          elements.totalRounds.textContent = gameState.roundInfo.totalRounds;
+        }
+
+        if (gameState.previousSentence) {
+          elements.previousSentence.textContent = gameState.previousSentence;
+          elements.previousSentenceContainer.classList.remove('hidden');
+          elements.firstSentenceHint.classList.add('hidden');
+        } else {
+          elements.previousSentenceContainer.classList.add('hidden');
+          elements.firstSentenceHint.classList.remove('hidden');
+        }
+      } else if (gameState.gameComplete) {
+        // Game complete - show results
+        showScreen('results');
+        displayStory(gameState.story);
+      } else {
+        // Waiting for another player's turn
+        showScreen('game');
+        elements.yourTurn.classList.add('hidden');
+        elements.waitingTurn.classList.remove('hidden');
+
+        // Show offline indicator if current player is offline
+        const isCurrentPlayerOffline = gameState.currentPlayerId && offlinePlayers.has(gameState.currentPlayerId);
+        const playerNameDisplay = isCurrentPlayerOffline ?
+          \`<span class="text-2xl">🔌</span> \${gameState.currentPlayerName} <span class="text-xs bg-gray-400 text-white px-2 py-1 rounded ml-2">Offline</span>\` :
+          gameState.currentPlayerName;
+
+        elements.currentPlayerName.innerHTML = playerNameDisplay;
+        elements.waitingTurnNumber.textContent = gameState.turnNumber;
+        elements.waitingTotalTurns.textContent = gameState.totalTurns;
+
+        if (gameState.roundInfo) {
+          elements.waitingRound.textContent = gameState.roundInfo.currentRound;
+          elements.waitingTotalRounds.textContent = gameState.roundInfo.totalRounds;
+        }
       }
     }
 
@@ -606,15 +835,25 @@ export function getHomePage() {
       const isCurrentHost = players.length > 0 && players[0].id === playerId;
       isHost = isCurrentHost;
 
-      elements.playersList.innerHTML = players.map((player, index) => \`
-        <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-          <div class="flex items-center gap-2">
-            <span class="text-2xl">\${index === 0 ? '👑' : '👤'}</span>
-            <span class="font-medium">\${player.name}</span>
+      elements.playersList.innerHTML = players.map((player, index) => {
+        const isOffline = offlinePlayers.has(player.id);
+        const offlineBadge = isOffline ?
+          '<span class="offline-badge bg-gray-400" title="Offline">❌ Offline</span>' :
+          '';
+
+        return \`
+          <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm \${isOffline ? 'opacity-60' : ''}">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">\${isOffline ? '🔌' : (index === 0 ? '👑' : '👤')}</span>
+              <span class="font-medium">\${player.name}</span>
+              \${offlineBadge}
+            </div>
+            <div class="flex gap-2">
+              \${index === 0 ? '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Host</span>' : ''}
+            </div>
           </div>
-          \${index === 0 ? '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Host</span>' : ''}
-        </div>
-      \`).join('');
+        \`;
+      }).join('');
 
       // Update rounds selector state
       const shouldEnable = isCurrentHost;
@@ -937,6 +1176,7 @@ export function getHomePage() {
     }
   </script>
 </body>
-</html>\`;
+</html>`;
+
+  return html;
 }
-`;

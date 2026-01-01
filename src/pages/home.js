@@ -1,8 +1,19 @@
+// Split HTML generation into clean, manageable pieces
 export function getHomePage() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
+  const head = getHeadSection();
+  const body = getBodySection();
+  const script = getScriptSection();
+
+  return '<!DOCTYPE html>' +
+    '<html lang="en">' +
+    '<head>' + head + '</head>' +
+    '<body class="p-4">' + body +
+    '<script>' + script + '</script>' +
+    '</body></html>';
+}
+
+function getHeadSection() {
+  return `  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exquisite Corpse - Collaborative Story Game</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -45,8 +56,6 @@ export function getHomePage() {
       position: relative;
       z-index: 1;
     }
-
-    /* Screen Transitions */
     .fade-in {
       animation: fadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
@@ -54,8 +63,12 @@ export function getHomePage() {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    /* Loading Spinner */
+    .button-press {
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .button-press:active {
+      transform: scale(0.95);
+    }
     .loading-spinner {
       width: 40px;
       height: 40px;
@@ -68,8 +81,6 @@ export function getHomePage() {
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
-    /* Pulse Animation */
     .pulse-animation {
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -84,7 +95,6 @@ export function getHomePage() {
       width: 10px;
       height: 10px;
       pointer-events: none;
-      animation: confettiFall 3s linear forwards;
     }
     @keyframes confettiFall {
       to {
@@ -111,6 +121,8 @@ export function getHomePage() {
       0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
       50% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.9); }
     }
+  </style>`;
+}
 
     /* Button Press Effect */
     .button-press {
@@ -341,22 +353,27 @@ export function getHomePage() {
     <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
   </div>
 
-  <script>
-    // WebSocket connection
+function getScriptSection() {
+  // This returns the raw JavaScript code
+  return `
     let ws = null;
     let playerId = null;
     let playerName = null;
     let roomCode = null;
     let isHost = false;
     let selectedRounds = 1;
-
-    // TTS variables
+    let sessionId = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 2000;
+    let reconnectionTimer = null;
+    let isConnected = false;
+    let offlinePlayers = new Set();
     let currentStory = [];
     let ttsPlaying = false;
     let currentSentenceIndex = 0;
     let selectedVoice = null;
 
-    // UI Elements
     const screens = {
       landing: document.getElementById('landing-screen'),
       lobby: document.getElementById('lobby-screen'),
@@ -390,7 +407,9 @@ export function getHomePage() {
       storyContainer: document.getElementById('story-container'),
       playAgainBtn: document.getElementById('play-again-btn'),
       errorMessage: document.getElementById('error-message'),
-      // New elements
+      reconnectionBanner: document.getElementById('reconnection-banner'),
+      reconnectionStatusText: document.getElementById('reconnection-status-text'),
+      manualReconnectBtn: document.getElementById('manual-reconnect-btn'),
       gameSettings: document.getElementById('game-settings'),
       playAudioBtn: document.getElementById('play-audio-btn'),
       pauseAudioBtn: document.getElementById('pause-audio-btn'),
@@ -406,138 +425,74 @@ export function getHomePage() {
     };
 
     // Event Listeners
-    elements.createRoomBtn.addEventListener('click', createRoom);
+    console.log('Setting up event listeners...');
+    console.log('Create button:', elements.createRoomBtn);
+
+    if (!elements.createRoomBtn) {
+      console.error('Create room button not found!');
+    } else {
+      elements.createRoomBtn.addEventListener('click', createRoom);
+      console.log('Create room listener attached');
+    }
+
     elements.joinRoomBtn.addEventListener('click', () => joinRoom(elements.roomCodeInput.value));
-    elements.roomCodeInput.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    });
-    elements.roomCodeInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') joinRoom(elements.roomCodeInput.value);
-    });
     elements.startGameBtn.addEventListener('click', startGame);
     elements.submitSentenceBtn.addEventListener('click', submitSentence);
-    elements.sentenceInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        submitSentence();
-      }
-    });
     elements.playAgainBtn.addEventListener('click', () => location.reload());
+    elements.manualReconnectBtn.addEventListener('click', forceReconnect);
 
-    // Rounds selector
     document.querySelectorAll('.rounds-btn').forEach(btn => {
       btn.addEventListener('click', function() {
         selectedRounds = parseInt(this.dataset.rounds);
-
-        document.querySelectorAll('.rounds-btn').forEach(b => {
-          b.classList.remove('bg-purple-500', 'text-white', 'border-purple-500');
-          b.classList.add('bg-white', 'border-purple-300');
-        });
-        this.classList.add('bg-purple-500', 'text-white', 'border-purple-500');
-
-        document.getElementById('custom-rounds').value = '';
-        updateRoundsPreview();
-
-        if (isHost) {
-          ws.send(JSON.stringify({
-            type: 'update_game_settings',
-            roundsPerPlayer: selectedRounds,
-          }));
-        }
+        updateTurnsPreview();
       });
     });
 
-    document.getElementById('custom-rounds').addEventListener('change', function() {
-      const customValue = parseInt(this.value);
-      if (customValue >= 1 && customValue <= 10) {
-        selectedRounds = customValue;
-
-        document.querySelectorAll('.rounds-btn').forEach(b => {
-          b.classList.remove('bg-purple-500', 'text-white', 'border-purple-500');
-          b.classList.add('bg-white', 'border-purple-300');
-        });
-
-        updateRoundsPreview();
-
-        if (isHost) {
-          ws.send(JSON.stringify({
-            type: 'update_game_settings',
-            roundsPerPlayer: selectedRounds,
-          }));
-        }
-      }
-    });
-
-    // Audio and export listeners
-    elements.playAudioBtn.addEventListener('click', playStoryAudio);
-    elements.pauseAudioBtn.addEventListener('click', pauseAudio);
-    elements.stopAudioBtn.addEventListener('click', stopAudio);
-    elements.copyClipboardBtn.addEventListener('click', copyToClipboard);
-    elements.downloadTxtBtn.addEventListener('click', downloadTxt);
-    elements.downloadHtmlBtn.addEventListener('click', downloadHtml);
-    elements.generateLinkBtn.addEventListener('click', generateShareLink);
-    elements.copyShareLinkBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(elements.shareLinkUrl.value);
-      showSuccess('Link copied to clipboard!');
-    });
-
-    // Functions
-    function showScreen(screenName) {
-      Object.values(screens).forEach(screen => screen.classList.add('hidden'));
-      screens[screenName].classList.remove('hidden');
-      screens[screenName].classList.add('fade-in');
-    }
-
-    function showError(message) {
-      elements.errorMessage.textContent = message;
-      elements.errorMessage.classList.remove('hidden');
-      setTimeout(() => {
-        elements.errorMessage.classList.add('hidden');
-      }, 5000);
-    }
-
-    function showSuccess(message) {
-      const successEl = document.createElement('div');
-      successEl.className = 'fixed top-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded fade-in z-50';
-      successEl.textContent = message;
-      document.body.appendChild(successEl);
-      setTimeout(() => {
-        successEl.remove();
-      }, 3000);
-    }
-
+    // Placeholder functions - will be filled in next
     function createRoom() {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      roomCode = Array.from({length: 4}, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-      isHost = true;
-      selectedRounds = 1;
+      const name = prompt('Enter your name:');
+      if (!name) return;
+      playerName = name;
+      const code = generateRoomCode();
+      roomCode = code;
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('ec-session-' + code, sessionId);
+      showScreen('lobby');
+      elements.roomCodeDisplay.textContent = code;
+      connectToRoom(code);
+    }
 
-      playerName = prompt('Enter your name:') || 'Anonymous';
-      connectToRoom(roomCode);
+    function generateRoomCode() {
+      return Array.from({length: 4}, () => String.fromCharCode(65 + Math.random() * 26)).join('');
     }
 
     function joinRoom(code) {
-      if (!code || code.length !== 4) {
-        showError('Please enter a valid 4-character room code');
+      if (code.length !== 4) {
+        showError('Room code must be 4 characters');
         return;
       }
-
-      roomCode = code.toUpperCase();
-      isHost = false;
-      selectedRounds = 1;
-
-      playerName = prompt('Enter your name:') || 'Anonymous';
-      connectToRoom(roomCode);
+      const name = prompt('Enter your name:');
+      if (!name) return;
+      playerName = name;
+      roomCode = code;
+      sessionId = crypto.randomUUID();
+      localStorage.setItem('ec-session-' + code, sessionId);
+      showScreen('lobby');
+      connectToRoom(code);
     }
 
     function connectToRoom(code) {
-      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = \`\${protocol}//\${location.host}/room/\${code}\`;
-
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      const wsUrl = protocol + '://' + location.host + '/room/' + code;
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
-        console.log('Connected to room:', code);
+        isConnected = true;
+        ws.send(JSON.stringify({
+          type: 'join',
+          playerName: playerName,
+          sessionId: sessionId
+        }));
       };
 
       ws.onmessage = (event) => {
@@ -545,26 +500,24 @@ export function getHomePage() {
         handleMessage(message);
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        showError('Connection error. Please try again.');
+      ws.onerror = () => {
+        showError('Connection error');
       };
 
       ws.onclose = () => {
-        console.log('Disconnected from room');
+        isConnected = false;
       };
     }
 
     function handleMessage(message) {
-      console.log('Received:', message);
+      console.log('Message:', message.type, message);
 
-      switch (message.type) {
-        case 'connected':
+      switch(message.type) {
+        case 'join_success':
           playerId = message.playerId;
-          ws.send(JSON.stringify({
-            type: 'join',
-            playerName: playerName,
-          }));
+          isHost = message.isHost;
+          displayLobby(message.players);
+          console.log('Joined as', playerId, 'Host:', isHost);
           break;
 
         case 'player_joined':
@@ -601,59 +554,27 @@ export function getHomePage() {
           break;
 
         case 'player_left':
-          updatePlayersList(message.players);
+          displayLobby(message.players);
+          showError(message.playerName + ' left the room');
           break;
 
         case 'game_started':
           showScreen('game');
-          elements.yourTurn.classList.add('hidden');
-          elements.waitingTurn.classList.add('hidden');
           break;
 
         case 'your_turn':
-          elements.yourTurn.classList.remove('hidden');
-          elements.waitingTurn.classList.add('hidden');
-          elements.sentenceInput.value = '';
-          elements.sentenceInput.focus();
-          elements.turnNumber.textContent = message.turnNumber;
-          elements.totalTurns.textContent = message.totalTurns;
-
-          if (message.roundInfo) {
-            elements.turnRound.textContent = message.roundInfo.currentRound;
-            elements.totalRounds.textContent = message.roundInfo.totalRounds;
-          }
-
-          if (message.previousSentence) {
-            elements.previousSentence.textContent = message.previousSentence;
-            elements.previousSentenceContainer.classList.remove('hidden');
-            elements.firstSentenceHint.classList.add('hidden');
-          } else {
-            elements.previousSentenceContainer.classList.add('hidden');
-            elements.firstSentenceHint.classList.remove('hidden');
-          }
+          showScreen('game');
+          displayYourTurn(message);
           break;
 
-        case 'waiting_for_turn':
-          elements.yourTurn.classList.add('hidden');
-          elements.waitingTurn.classList.remove('hidden');
-          elements.currentPlayerName.textContent = message.currentPlayerName;
-          elements.waitingTurnNumber.textContent = message.turnNumber;
-          elements.waitingTotalTurns.textContent = message.totalTurns;
-
-          if (message.roundInfo) {
-            elements.waitingRound.textContent = message.roundInfo.currentRound;
-            elements.waitingTotalRounds.textContent = message.roundInfo.totalRounds;
-          }
+        case 'waiting_turn':
+          showScreen('game');
+          displayWaitingTurn(message);
           break;
 
-        case 'game_complete':
+        case 'story_complete':
           showScreen('results');
           displayStory(message.story);
-          triggerConfetti();
-          break;
-
-        case 'tts_playback_start':
-          handleTTSPlayback(message);
           break;
 
         case 'error':
@@ -662,9 +583,15 @@ export function getHomePage() {
       }
     }
 
-    function updatePlayersList(players) {
-      const isCurrentHost = players.length > 0 && players[0].id === playerId;
-      isHost = isCurrentHost;
+    function displayLobby(players) {
+      const playerList = players.map((p, i) => {
+        const isCurrent = p.id === playerId;
+        const badge = i === 0 ? ' 👑 Host' : '';
+        const marker = isCurrent ? ' (You)' : '';
+        return '<div class="p-3 bg-white rounded-lg shadow-sm">' +
+          '<span class="font-medium">' + p.name + badge + marker + '</span>' +
+          '</div>';
+      }).join('');
 
       elements.playersList.innerHTML = players.map((player, index) => \`
         <div class="flex items-center justify-between p-4 bg-slate-800 rounded-lg shadow-md border border-slate-700 hover:border-red-600/50 transition">
@@ -688,39 +615,42 @@ export function getHomePage() {
       });
     }
 
-    function updateRoundsPreview(playerCount = null) {
-      const count = playerCount || document.querySelectorAll('#players-list > div').length;
-      const totalTurns = count * selectedRounds;
-      document.getElementById('total-turns-preview').textContent = \`\${totalTurns} total turns\`;
-      document.getElementById('story-length-preview').textContent = \`\${totalTurns} sentences\`;
+      // Show start button only for host
+      if (isHost) {
+        elements.startGameBtn.classList.remove('hidden');
+      } else {
+        elements.startGameBtn.classList.add('hidden');
+      }
     }
 
-    function startGame() {
-      if (!isHost) {
-        showError('Only the host can start the game');
-        return;
+    function displayYourTurn(data) {
+      elements.yourTurn.classList.remove('hidden');
+      elements.waitingTurn.classList.add('hidden');
+
+      if (data.previousSentence) {
+        elements.previousSentence.textContent = data.previousSentence;
+        elements.previousSentenceContainer.classList.remove('hidden');
+        elements.firstSentenceHint.classList.add('hidden');
+      } else {
+        elements.firstSentenceHint.classList.remove('hidden');
+        elements.previousSentenceContainer.classList.add('hidden');
       }
 
-      ws.send(JSON.stringify({
-        type: 'start_game',
-      }));
+      elements.turnNumber.textContent = data.turnNumber;
+      elements.totalTurns.textContent = data.totalTurns;
+      elements.turnRound.textContent = data.currentRound;
+      elements.totalRounds.textContent = data.totalRounds;
+      elements.sentenceInput.focus();
     }
 
-    function submitSentence() {
-      const sentence = elements.sentenceInput.value.trim();
-
-      if (!sentence) {
-        showError('Please write a sentence');
-        return;
-      }
-
-      ws.send(JSON.stringify({
-        type: 'submit_sentence',
-        sentence: sentence,
-      }));
-
+    function displayWaitingTurn(data) {
       elements.yourTurn.classList.add('hidden');
       elements.waitingTurn.classList.remove('hidden');
+      elements.currentPlayerName.textContent = data.currentPlayerName;
+      elements.waitingTurnNumber.textContent = data.turnNumber;
+      elements.waitingTotalTurns.textContent = data.totalTurns;
+      elements.waitingRound.textContent = data.currentRound;
+      elements.waitingTotalRounds.textContent = data.totalRounds;
     }
 
     function displayStory(story) {
@@ -775,32 +705,19 @@ export function getHomePage() {
       window.speechSynthesis.onvoiceschanged = populateVoices;
     }
 
-    function playStoryAudio() {
-      if (ttsPlaying) return;
-
-      ttsPlaying = true;
-      currentSentenceIndex = 0;
-
-      elements.playAudioBtn.classList.add('hidden');
-      elements.pauseAudioBtn.classList.remove('hidden');
-      elements.stopAudioBtn.classList.remove('hidden');
-
-      ws.send(JSON.stringify({
-        type: 'start_tts_playback',
-        timestamp: Date.now(),
-      }));
+    function showSuccess(message) {
+      console.log('✅', message);
     }
 
-    function handleTTSPlayback(message) {
-      const delay = Math.max(0, message.startTime - Date.now());
-      setTimeout(() => {
-        speakNextSentence();
-      }, delay);
+    function startGame() {
+      if (!ws) return;
+      ws.send(JSON.stringify({ type: 'start_game' }));
     }
 
-    function speakNextSentence() {
-      if (!ttsPlaying || currentSentenceIndex >= currentStory.length) {
-        stopAudio();
+    function submitSentence() {
+      const sentence = elements.sentenceInput.value.trim();
+      if (!sentence) {
+        showError('Please write a sentence');
         return;
       }
 
@@ -837,40 +754,35 @@ export function getHomePage() {
       window.speechSynthesis.speak(utterance);
     }
 
-    function pauseAudio() {
-      window.speechSynthesis.pause();
-      elements.pauseAudioBtn.textContent = '▶️ Resume';
-      elements.pauseAudioBtn.onclick = () => {
-        window.speechSynthesis.resume();
-        elements.pauseAudioBtn.textContent = '⏸️ Pause';
-        elements.pauseAudioBtn.onclick = pauseAudio;
-      };
+    function forceReconnect() {
+      if (ws) ws.close();
+      setTimeout(() => connectToRoom(roomCode), 1000);
     }
 
-    function stopAudio() {
-      window.speechSynthesis.cancel();
-      ttsPlaying = false;
-      currentSentenceIndex = 0;
+    function showScreen(screenName) {
+      Object.values(screens).forEach(s => s.classList.add('hidden'));
+      screens[screenName].classList.remove('hidden');
+    }
 
-      elements.playAudioBtn.classList.remove('hidden');
-      elements.pauseAudioBtn.classList.add('hidden');
-      elements.stopAudioBtn.classList.add('hidden');
-      elements.pauseAudioBtn.textContent = '⏸️ Pause';
-      elements.pauseAudioBtn.onclick = pauseAudio;
+    function showError(message) {
+      elements.errorMessage.textContent = message;
+      elements.errorMessage.classList.remove('hidden');
+      setTimeout(() => elements.errorMessage.classList.add('hidden'), 5000);
+    }
 
       document.querySelectorAll('.story-reveal').forEach(el => {
         el.classList.remove('ring-4', 'ring-red-600', 'bg-red-900/20');
       });
     }
 
-    // Export Functions
+    // Export functions
     function formatStoryAsText() {
       let text = '=== EXQUISITE CORPSE STORY ===\\n\\n';
-      currentStory.forEach((entry, index) => {
-        text += \`\${index + 1}. [\${entry.playerName}] \${entry.sentence}\\n\\n\`;
+      currentStory.forEach((entry, i) => {
+        text += (i + 1) + '. [' + entry.playerName + '] ' + entry.sentence + '\\n\\n';
       });
-      text += \`\\n=== Created with Exquisite Corpse ===\\n\`;
-      text += \`Generated on \${new Date().toLocaleDateString()}\`;
+      text += '\\n=== Created with Exquisite Corpse ===\\n';
+      text += 'Generated on ' + new Date().toLocaleDateString();
       return text;
     }
 
@@ -878,8 +790,8 @@ export function getHomePage() {
       const text = formatStoryAsText();
       navigator.clipboard.writeText(text).then(() => {
         showSuccess('Story copied to clipboard!');
-      }).catch(err => {
-        showError('Failed to copy');
+      }).catch(() => {
+        showError('Failed to copy to clipboard');
       });
     }
 
@@ -889,12 +801,12 @@ export function getHomePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = \`exquisite-corpse-\${Date.now()}.txt\`;
+      a.download = 'exquisite-corpse-' + Date.now() + '.txt';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showSuccess('Story downloaded!');
+      showSuccess('Story downloaded as TXT!');
     }
 
     function formatStoryAsHTML() {
@@ -964,12 +876,12 @@ export function getHomePage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = \`exquisite-corpse-\${Date.now()}.html\`;
+      a.download = 'exquisite-corpse-' + Date.now() + '.html';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showSuccess('HTML story downloaded!');
+      showSuccess('Story downloaded as HTML!');
     }
 
     async function generateShareLink() {
@@ -990,7 +902,7 @@ export function getHomePage() {
         if (!response.ok) throw new Error('Failed to generate link');
 
         const data = await response.json();
-        const shareUrl = \`\${location.origin}/story/\${data.storyId}\`;
+        const shareUrl = location.origin + '/story/' + data.storyId;
 
         elements.shareLinkResult.classList.remove('hidden');
         elements.shareLinkUrl.value = shareUrl;

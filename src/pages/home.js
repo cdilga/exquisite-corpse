@@ -904,16 +904,16 @@ export function getHomePage() {
 
     function displayStory(story) {
       currentStory = story;
-      elements.storyContainer.innerHTML = story.map((entry, index) => \`
-        <div class="story-reveal p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500" style="animation-delay: \${index * 0.1}s">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-purple-600">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-700">\${entry.playerName}</span>
-            <span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
-          </div>
-          <p class="text-gray-800 text-lg">\${entry.sentence}</p>
-        </div>
-      \`).join('');
+      elements.storyContainer.innerHTML = story.map((entry, index) => {
+        return '<div class="story-reveal p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500" style="animation-delay: ' + (index * 0.1) + 's">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+          '<span class="text-lg font-bold text-purple-600">' + (index + 1) + '.</span>' +
+          '<span class="text-sm font-semibold text-gray-700">' + entry.playerName + '</span>' +
+          '<span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round ' + (entry.roundNumber || 1) + '</span>' +
+          '</div>' +
+          '<p class="text-gray-800 text-lg">' + entry.sentence + '</p>' +
+          '</div>';
+      }).join('');
 
       initializeTTS();
     }
@@ -1062,51 +1062,50 @@ export function getHomePage() {
     }
 
     function formatStoryAsHTML() {
-      return \`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Exquisite Corpse Story</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
-  <style>
-    body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-    }
-  </style>
-</head>
-<body class="p-8">
-  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-    <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>
-    <p class="text-center text-gray-600 mb-8">A Collaborative Story</p>
+      const storyHtml = currentStory.map((entry, index) => {
+        return '<div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+          '<span class="text-lg font-bold text-purple-600">' + (index + 1) + '.</span>' +
+          '<span class="text-sm font-semibold text-gray-700">' + entry.playerName + '</span>' +
+          '<span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round ' + (entry.roundNumber || 1) + '</span>' +
+          '</div>' +
+          '<p class="text-gray-800 text-lg">' + entry.sentence + '</p>' +
+          '</div>';
+      }).join('');
 
-    <div class="space-y-4 mb-8">
-      \${currentStory.map((entry, index) => \`
-        <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-purple-600">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-700">\${entry.playerName}</span>
-            <span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
-          </div>
-          <p class="text-gray-800 text-lg">\${entry.sentence}</p>
-        </div>
-      \`).join('')}
-    </div>
-
-    <div class="text-center">
-      <a href="/" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition inline-block">
-        Create Your Own Story
-      </a>
-    </div>
-
-    <div class="mt-8 text-center text-sm text-gray-500">
-      <p>Created \${new Date().toLocaleDateString()}</p>
-      <p class="mt-2">Made with ❤️ using Exquisite Corpse</p>
-    </div>
-  </div>
-</body>
-</html>\`;
+      return '<!DOCTYPE html>\n' +
+        '<html lang="en">\n' +
+        '<head>\n' +
+        '  <meta charset="UTF-8">\n' +
+        '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+        '  <title>Exquisite Corpse Story</title>\n' +
+        '  <script src="https://cdn.tailwindcss.com"><\/script>\n' +
+        '  <style>\n' +
+        '    body {\n' +
+        '      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n' +
+        '      min-height: 100vh;\n' +
+        '    }\n' +
+        '  </style>\n' +
+        '</head>\n' +
+        '<body class="p-8">\n' +
+        '  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">\n' +
+        '    <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>\n' +
+        '    <p class="text-center text-gray-600 mb-8">A Collaborative Story</p>\n' +
+        '    <div class="space-y-4 mb-8">\n' +
+        storyHtml +
+        '    </div>\n' +
+        '    <div class="text-center">\n' +
+        '      <a href="/" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition inline-block">\n' +
+        '        Create Your Own Story\n' +
+        '      </a>\n' +
+        '    </div>\n' +
+        '    <div class="mt-8 text-center text-sm text-gray-500">\n' +
+        '      <p>Created ' + new Date().toLocaleDateString() + '</p>\n' +
+        '      <p class="mt-2">Made with ❤️ using Exquisite Corpse</p>\n' +
+        '    </div>\n' +
+        '  </div>\n' +
+        '</body>\n' +
+        '</html>';
     }
 
     function downloadHtml() {

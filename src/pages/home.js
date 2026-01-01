@@ -416,8 +416,117 @@ function getScriptSection() {
     }
 
     function handleMessage(message) {
-      console.log('Message:', message.type);
-      // TODO: Implement message handlers
+      console.log('Message:', message.type, message);
+
+      switch(message.type) {
+        case 'join_success':
+          playerId = message.playerId;
+          isHost = message.isHost;
+          displayLobby(message.players);
+          console.log('Joined as', playerId, 'Host:', isHost);
+          break;
+
+        case 'player_joined':
+          displayLobby(message.players);
+          showSuccess(message.playerName + ' joined!');
+          break;
+
+        case 'player_left':
+          displayLobby(message.players);
+          showError(message.playerName + ' left the room');
+          break;
+
+        case 'game_started':
+          showScreen('game');
+          break;
+
+        case 'your_turn':
+          showScreen('game');
+          displayYourTurn(message);
+          break;
+
+        case 'waiting_turn':
+          showScreen('game');
+          displayWaitingTurn(message);
+          break;
+
+        case 'story_complete':
+          showScreen('results');
+          displayStory(message.story);
+          break;
+
+        case 'error':
+          showError(message.message);
+          break;
+      }
+    }
+
+    function displayLobby(players) {
+      const playerList = players.map((p, i) => {
+        const isCurrent = p.id === playerId;
+        const badge = i === 0 ? ' 👑 Host' : '';
+        const marker = isCurrent ? ' (You)' : '';
+        return '<div class="p-3 bg-white rounded-lg shadow-sm">' +
+          '<span class="font-medium">' + p.name + badge + marker + '</span>' +
+          '</div>';
+      }).join('');
+
+      elements.playersList.innerHTML = playerList;
+
+      // Show start button only for host
+      if (isHost) {
+        elements.startGameBtn.classList.remove('hidden');
+      } else {
+        elements.startGameBtn.classList.add('hidden');
+      }
+    }
+
+    function displayYourTurn(data) {
+      elements.yourTurn.classList.remove('hidden');
+      elements.waitingTurn.classList.add('hidden');
+
+      if (data.previousSentence) {
+        elements.previousSentence.textContent = data.previousSentence;
+        elements.previousSentenceContainer.classList.remove('hidden');
+        elements.firstSentenceHint.classList.add('hidden');
+      } else {
+        elements.firstSentenceHint.classList.remove('hidden');
+        elements.previousSentenceContainer.classList.add('hidden');
+      }
+
+      elements.turnNumber.textContent = data.turnNumber;
+      elements.totalTurns.textContent = data.totalTurns;
+      elements.turnRound.textContent = data.currentRound;
+      elements.totalRounds.textContent = data.totalRounds;
+      elements.sentenceInput.focus();
+    }
+
+    function displayWaitingTurn(data) {
+      elements.yourTurn.classList.add('hidden');
+      elements.waitingTurn.classList.remove('hidden');
+      elements.currentPlayerName.textContent = data.currentPlayerName;
+      elements.waitingTurnNumber.textContent = data.turnNumber;
+      elements.waitingTotalTurns.textContent = data.totalTurns;
+      elements.waitingRound.textContent = data.currentRound;
+      elements.waitingTotalRounds.textContent = data.totalRounds;
+    }
+
+    function displayStory(story) {
+      const storyHtml = story.map((entry, i) => {
+        return '<div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+          '<span class="text-lg font-bold text-purple-600">' + (i + 1) + '.</span>' +
+          '<span class="text-sm font-semibold text-gray-700">' + entry.playerName + '</span>' +
+          '</div>' +
+          '<p class="text-gray-800 text-lg">' + entry.sentence + '</p>' +
+          '</div>';
+      }).join('');
+
+      elements.storyContainer.innerHTML = storyHtml;
+    }
+
+    function showSuccess(message) {
+      console.log('✅', message);
     }
 
     function startGame() {

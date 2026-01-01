@@ -225,9 +225,19 @@ export class GameRoom {
     state.players.push(newPlayer);
     await this.saveGameState(state);
 
-    // Broadcast updated player list to all connected players
+    // Send join success to the new player
+    this.sendToPlayer(playerId, {
+      type: 'join_success',
+      playerId: playerId,
+      isHost: state.players.length === 1, // First player is host
+      players: state.players,
+      roomCode: state.roomCode,
+    });
+
+    // Notify other players about the new player
     this.broadcast({
       type: 'player_joined',
+      playerName: newPlayer.name,
       players: state.players,
       roomCode: state.roomCode,
     });
@@ -274,10 +284,20 @@ export class GameRoom {
       previousSentence: null,
       turnNumber: 1,
       totalTurns: state.totalTurns,
-      roundInfo: {
+      currentRound: 1,
+      totalRounds: state.roundsPerPlayer,
+    });
+
+    // Tell other players to wait
+    state.players.slice(1).forEach(player => {
+      this.sendToPlayer(player.id, {
+        type: 'waiting_turn',
+        currentPlayerName: state.players[0].name,
+        turnNumber: 1,
+        totalTurns: state.totalTurns,
         currentRound: 1,
         totalRounds: state.roundsPerPlayer,
-      },
+      });
     });
   }
 

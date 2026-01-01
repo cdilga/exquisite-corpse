@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Development
+.wrangler/
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+
+# Test outputs
+test-results/
+playwright-report/
+test-output.log
+TESTING.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

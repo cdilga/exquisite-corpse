@@ -7,17 +7,51 @@ export function getHomePage() {
   <title>Exquisite Corpse - Collaborative Story Game</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --dark-bg: #0f172a;
+      --dark-card: #1e293b;
+      --dark-secondary: #334155;
+      --crimson: #dc2626;
+      --crimson-dark: #b91c1c;
+      --crimson-light: #ef4444;
+      --text-light: #f1f5f9;
+      --text-muted: #cbd5e1;
+      --border-glow: #991b1b;
+    }
+
     body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
       min-height: 100vh;
+      color: var(--text-light);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      position: relative;
+    }
+
+    /* Sinister background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .max-w-2xl {
+      position: relative;
+      z-index: 1;
     }
 
     /* Screen Transitions */
     .fade-in {
-      animation: fadeIn 0.3s ease-in;
+      animation: fadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
@@ -25,10 +59,11 @@ export function getHomePage() {
     .loading-spinner {
       width: 40px;
       height: 40px;
-      border: 4px solid rgba(124, 58, 237, 0.2);
-      border-top-color: #7c3aed;
+      border: 4px solid rgba(220, 38, 38, 0.2);
+      border-top-color: var(--crimson);
       border-radius: 50%;
       animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+      box-shadow: 0 0 12px rgba(220, 38, 38, 0.3);
     }
     @keyframes spin {
       to { transform: rotate(360deg); }
@@ -40,10 +75,10 @@ export function getHomePage() {
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
+      50% { opacity: 0.4; }
     }
 
-    /* Confetti */
+    /* Confetti - darker with red tones */
     .confetti {
       position: fixed;
       width: 10px;
@@ -68,21 +103,33 @@ export function getHomePage() {
       to { opacity: 1; transform: translateX(0); }
     }
 
-    /* Active Player Glow */
+    /* Active Player Glow - crimson instead of purple */
     .active-player-glow {
       animation: pulseGlow 2s ease-in-out infinite;
     }
     @keyframes pulseGlow {
-      0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.4); }
-      50% { box-shadow: 0 0 30px rgba(124, 58, 237, 0.8); }
+      0%, 100% { box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+      50% { box-shadow: 0 0 30px rgba(220, 38, 38, 0.9); }
     }
 
     /* Button Press Effect */
     .button-press {
-      transition: transform 0.1s ease;
+      transition: transform 0.1s ease, box-shadow 0.2s ease;
     }
     .button-press:active {
       transform: scale(0.95);
+    }
+
+    /* Dark card styling */
+    .dark-card {
+      background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-secondary) 100%);
+      border: 2px solid var(--border-glow);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .dark-card:hover {
+      box-shadow: 0 12px 40px rgba(220, 38, 38, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border-color: var(--crimson-light);
     }
 
     /* Respect prefers-reduced-motion */
@@ -97,21 +144,21 @@ export function getHomePage() {
 <body class="p-4">
   <div class="max-w-2xl mx-auto">
     <!-- Landing Screen -->
-    <div id="landing-screen" class="bg-white rounded-2xl shadow-2xl p-8 fade-in">
-      <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>
-      <p class="text-center text-gray-600 mb-8">A hilarious collaborative storytelling game</p>
+    <div id="landing-screen" class="dark-card rounded-2xl p-8 fade-in">
+      <h1 class="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">📝 Exquisite Corpse</h1>
+      <p class="text-center text-gray-400 mb-8 italic text-lg">Where twisted tales are born from shadows...</p>
 
       <div class="space-y-4">
-        <button id="create-room-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press">
+        <button id="create-room-btn" class="w-full bg-gradient-to-r from-red-700 hover:from-red-600 to-red-900 hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press shadow-lg hover:shadow-red-900/50">
           Create New Room
         </button>
 
         <div class="relative">
           <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-gray-300"></div>
+            <div class="w-full border-t border-gray-700"></div>
           </div>
           <div class="relative flex justify-center text-sm">
-            <span class="px-2 bg-white text-gray-500">or</span>
+            <span class="px-2 bg-gradient-to-b from-slate-900 to-slate-800 text-gray-500">or enter existing</span>
           </div>
         </div>
 
@@ -121,177 +168,177 @@ export function getHomePage() {
             id="room-code-input"
             placeholder="Enter 4-letter room code"
             maxlength="4"
-            class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 uppercase text-center text-2xl font-bold tracking-wider"
+            class="flex-1 px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 uppercase text-center text-2xl font-bold tracking-wider bg-slate-800 text-white placeholder-gray-600 transition"
           />
-          <button id="join-room-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold px-6 rounded-lg transition button-press">
+          <button id="join-room-btn" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold px-6 rounded-lg transition button-press shadow-lg hover:shadow-red-900/50">
             Join
           </button>
         </div>
       </div>
 
-      <div class="mt-8 p-4 bg-purple-50 rounded-lg">
-        <h3 class="font-bold text-purple-900 mb-2">How to Play:</h3>
-        <ol class="text-sm text-purple-800 space-y-1 list-decimal list-inside">
+      <div class="mt-8 p-5 bg-slate-800 rounded-lg border-l-4 border-red-600">
+        <h3 class="font-bold text-red-500 mb-3 text-lg">⚡ How to Play:</h3>
+        <ol class="text-sm text-gray-300 space-y-2 list-decimal list-inside">
           <li>Create a room and share the code with friends</li>
           <li>Configure game length (sentences per player)</li>
           <li>Each player writes a sentence, seeing only the previous one</li>
-          <li>Hear the complete story read aloud together!</li>
-          <li>Share your masterpiece with the world</li>
+          <li>Hear the complete twisted tale read aloud!</li>
+          <li>Share your dark masterpiece with the world</li>
         </ol>
       </div>
     </div>
 
     <!-- Lobby Screen -->
-    <div id="lobby-screen" class="hidden bg-white rounded-2xl shadow-2xl p-8 fade-in">
-      <div class="text-center mb-6">
-        <h2 class="text-3xl font-bold text-gray-800 mb-2">Room Code</h2>
-        <div class="text-6xl font-bold text-purple-600 tracking-widest" id="room-code-display">----</div>
-        <p class="text-gray-600 mt-2">Share this code with your friends!</p>
+    <div id="lobby-screen" class="hidden dark-card rounded-2xl p-8 fade-in">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold text-gray-300 mb-3">Your Room Code</h2>
+        <div class="text-7xl font-black tracking-widest text-red-600 mb-2" id="room-code-display">----</div>
+        <p class="text-gray-400 font-mono">Share this with friends to join the darkness</p>
       </div>
 
-      <div class="bg-gray-50 rounded-lg p-4 mb-6">
-        <h3 class="font-bold text-gray-700 mb-3">Players in Lobby:</h3>
-        <div id="players-list" class="space-y-2"></div>
+      <div class="bg-slate-700/50 rounded-lg p-5 mb-6 border border-slate-600">
+        <h3 class="font-bold text-red-400 mb-4">👥 Players Gathered:</h3>
+        <div id="players-list" class="space-y-3"></div>
       </div>
 
       <!-- Game Settings (Host Only) -->
-      <div id="game-settings" class="bg-purple-50 rounded-lg p-4 mb-6">
-        <h3 class="font-bold text-purple-900 mb-3">⚙️ Game Settings</h3>
+      <div id="game-settings" class="bg-slate-700/40 rounded-lg p-5 mb-6 border-l-4 border-red-600">
+        <h3 class="font-bold text-red-400 mb-4">⚙️ Game Settings</h3>
 
-        <div class="space-y-3">
+        <div class="space-y-4">
           <label class="block">
-            <span class="text-sm text-purple-800 font-medium">Sentences per Player:</span>
-            <div class="flex gap-2 mt-2 flex-wrap">
-              <button class="rounds-btn px-4 py-2 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-100 transition button-press" data-rounds="1">1</button>
-              <button class="rounds-btn px-4 py-2 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-100 transition button-press" data-rounds="2">2</button>
-              <button class="rounds-btn px-4 py-2 bg-white border-2 border-purple-300 rounded-lg hover:bg-purple-100 transition button-press" data-rounds="3">3</button>
-              <input type="number" id="custom-rounds" min="1" max="10" placeholder="Custom" class="w-24 px-3 py-2 border-2 border-purple-300 rounded-lg text-center button-press" />
+            <span class="text-sm text-gray-300 font-medium">Sentences per Player:</span>
+            <div class="flex gap-2 mt-3 flex-wrap">
+              <button class="rounds-btn px-4 py-2 bg-slate-800 border-2 border-slate-600 rounded-lg hover:bg-red-900/30 hover:border-red-600 transition button-press text-gray-300" data-rounds="1">1</button>
+              <button class="rounds-btn px-4 py-2 bg-slate-800 border-2 border-slate-600 rounded-lg hover:bg-red-900/30 hover:border-red-600 transition button-press text-gray-300" data-rounds="2">2</button>
+              <button class="rounds-btn px-4 py-2 bg-slate-800 border-2 border-slate-600 rounded-lg hover:bg-red-900/30 hover:border-red-600 transition button-press text-gray-300" data-rounds="3">3</button>
+              <input type="number" id="custom-rounds" min="1" max="10" placeholder="Custom" class="w-24 px-3 py-2 border-2 border-slate-600 rounded-lg text-center button-press bg-slate-800 text-white placeholder-gray-600 focus:border-red-600 focus:ring-1 focus:ring-red-600/50 transition" />
             </div>
           </label>
 
-          <p class="text-xs text-purple-700">
+          <p class="text-xs text-gray-400">
             <span id="total-turns-preview">? total turns</span>
-            (<span id="story-length-preview">? sentences</span> story)
+            (<span id="story-length-preview">? sentences</span> in story)
           </p>
         </div>
 
-        <p class="text-xs text-gray-500 mt-2">Only the host can change game settings</p>
+        <p class="text-xs text-gray-500 mt-3">Only the host controls these settings</p>
       </div>
 
-      <button id="start-game-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press">
-        Start Game
+      <button id="start-game-btn" class="w-full bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press shadow-lg hover:shadow-red-900/50 mb-3">
+        Begin the Tale
       </button>
 
-      <p class="text-center text-sm text-gray-500 mt-4">Waiting for host to start the game...</p>
+      <p class="text-center text-sm text-gray-500">Awaiting host to summon the darkness...</p>
     </div>
 
     <!-- Game Screen -->
-    <div id="game-screen" class="hidden bg-white rounded-2xl shadow-2xl p-8 fade-in">
+    <div id="game-screen" class="hidden dark-card rounded-2xl p-8 fade-in">
       <!-- Your Turn -->
       <div id="your-turn" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-bold text-gray-800">Your Turn!</h2>
-          <p class="text-sm text-gray-500">Round <span id="turn-round">1</span>/<span id="total-rounds">1</span></p>
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-3xl font-bold text-red-500">Your Turn...</h2>
+          <p class="text-sm text-gray-400">Round <span id="turn-round">1</span>/<span id="total-rounds">1</span></p>
         </div>
 
-        <div id="previous-sentence-container" class="hidden mb-6 p-4 bg-purple-50 rounded-lg border-l-4 border-purple-500">
-          <p class="text-sm text-purple-700 font-semibold mb-1">Previous sentence:</p>
-          <p id="previous-sentence" class="text-gray-800 italic"></p>
+        <div id="previous-sentence-container" class="hidden mb-6 p-5 bg-slate-800 rounded-lg border-l-4 border-red-600">
+          <p class="text-sm text-red-400 font-semibold mb-2">The Whisper Before:</p>
+          <p id="previous-sentence" class="text-gray-200 italic text-lg"></p>
         </div>
 
-        <div id="first-sentence-hint" class="hidden mb-6 p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-          <p class="text-green-800">You're starting the story! Write the first sentence...</p>
+        <div id="first-sentence-hint" class="hidden mb-6 p-5 bg-slate-800 rounded-lg border-l-4 border-yellow-600">
+          <p class="text-yellow-400 font-semibold">✨ You begin the tale... What shadows will you weave?</p>
         </div>
 
         <textarea
           id="sentence-input"
           rows="4"
-          placeholder="Write your sentence here..."
-          class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500 resize-none"
+          placeholder="Continue the twisted tale..."
+          class="w-full px-4 py-3 border-2 border-slate-600 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600/50 resize-none bg-slate-800 text-white placeholder-gray-600 transition text-lg"
         ></textarea>
 
-        <div class="flex justify-between items-center mt-4">
-          <p class="text-sm text-gray-500">Turn <span id="turn-number">1</span> of <span id="total-turns">?</span></p>
-          <button id="submit-sentence-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 button-press">
-            Submit
+        <div class="flex justify-between items-center mt-6">
+          <p class="text-sm text-gray-400">Turn <span id="turn-number">1</span> of <span id="total-turns">?</span></p>
+          <button id="submit-sentence-btn" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-8 rounded-lg transition transform hover:scale-105 button-press shadow-lg hover:shadow-red-900/50">
+            Reveal
           </button>
         </div>
       </div>
 
       <!-- Waiting Screen -->
-      <div id="waiting-turn" class="hidden text-center py-12">
-        <div class="text-6xl mb-4 pulse-animation">⏳</div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Waiting for <span id="current-player-name">player</span>...</h2>
-        <p class="text-sm text-gray-600 mb-2">Round <span id="waiting-round">1</span>/<span id="waiting-total-rounds">1</span></p>
-        <p class="text-gray-600">Turn <span id="waiting-turn-number">1</span> of <span id="waiting-total-turns">?</span></p>
+      <div id="waiting-turn" class="hidden text-center py-16">
+        <div class="text-8xl mb-6 pulse-animation">🕷️</div>
+        <h2 class="text-3xl font-bold text-gray-300 mb-3">Waiting for <span id="current-player-name">player</span>...</h2>
+        <p class="text-sm text-gray-400 mb-2">Round <span id="waiting-round">1</span>/<span id="waiting-total-rounds">1</span></p>
+        <p class="text-gray-400">Turn <span id="waiting-turn-number">1</span> of <span id="waiting-total-turns">?</span></p>
       </div>
     </div>
 
     <!-- Results Screen -->
-    <div id="results-screen" class="hidden bg-white rounded-2xl shadow-2xl p-8 fade-in">
-      <h2 class="text-3xl font-bold text-center text-gray-800 mb-2">🎉 The Complete Story!</h2>
-      <p class="text-center text-gray-600 mb-6">Everyone's contribution to the masterpiece</p>
+    <div id="results-screen" class="hidden dark-card rounded-2xl p-8 fade-in">
+      <h2 class="text-4xl font-bold text-center bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent mb-2">👁️ The Tale Revealed!</h2>
+      <p class="text-center text-gray-400 mb-8 italic">Behold the twisted masterpiece...</p>
 
       <div id="story-container" class="space-y-4 mb-8"></div>
 
       <!-- Audio Controls -->
-      <div id="audio-controls" class="bg-blue-50 rounded-lg p-4 mb-6 border-l-4 border-blue-500">
-        <p class="text-sm text-blue-800 font-semibold mb-3">🔊 Hear Your Story:</p>
+      <div id="audio-controls" class="bg-slate-800 rounded-lg p-5 mb-6 border-l-4 border-red-600">
+        <p class="text-sm text-red-400 font-semibold mb-4">🔊 Hear the Whispers:</p>
         <div class="flex gap-2 flex-wrap">
-          <button id="play-audio-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition button-press">
-            🔊 Play Story
+          <button id="play-audio-btn" class="flex items-center gap-2 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-2 px-4 rounded-lg transition button-press shadow-md">
+            🔊 Play
           </button>
-          <button id="pause-audio-btn" class="hidden flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition button-press">
+          <button id="pause-audio-btn" class="hidden flex items-center gap-2 bg-yellow-700 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition button-press shadow-md">
             ⏸️ Pause
           </button>
-          <button id="stop-audio-btn" class="hidden flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition button-press">
+          <button id="stop-audio-btn" class="hidden flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition button-press shadow-md">
             ⏹️ Stop
           </button>
-          <select id="voice-selector" class="px-3 py-2 border-2 border-blue-300 rounded-lg bg-white button-press">
-            <option>Select voice...</option>
+          <select id="voice-selector" class="px-3 py-2 border-2 border-slate-600 rounded-lg bg-slate-900 text-white button-press focus:border-red-600 focus:ring-1 focus:ring-red-600/50 transition">
+            <option class="bg-slate-900">Select voice...</option>
           </select>
         </div>
       </div>
 
       <!-- Export Options -->
-      <div id="export-options" class="bg-orange-50 rounded-lg p-4 mb-6 border-l-4 border-orange-500">
-        <p class="text-sm text-orange-800 font-semibold mb-3">📤 Share Your Story:</p>
+      <div id="export-options" class="bg-slate-800 rounded-lg p-5 mb-6 border-l-4 border-red-600">
+        <p class="text-sm text-red-400 font-semibold mb-4">📤 Spread the Darkness:</p>
         <div class="grid grid-cols-2 gap-3">
-          <button id="copy-clipboard-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm">
+          <button id="copy-clipboard-btn" class="bg-blue-700 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm shadow-md">
             📋 Copy Text
           </button>
 
-          <button id="download-txt-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm">
+          <button id="download-txt-btn" class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm shadow-md">
             📄 Download .txt
           </button>
 
-          <button id="download-html-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm">
+          <button id="download-html-btn" class="bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm shadow-md">
             🎨 Download HTML
           </button>
 
-          <button id="generate-link-btn" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm">
+          <button id="generate-link-btn" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-2 px-4 rounded-lg transition button-press text-sm shadow-md">
             🔗 Share Link
           </button>
         </div>
 
-        <div id="share-link-result" class="hidden mt-3 p-3 bg-white rounded border-2 border-pink-300">
-          <p class="text-sm text-gray-700 mb-2">Shareable link created:</p>
+        <div id="share-link-result" class="hidden mt-4 p-4 bg-slate-900 rounded border-2 border-red-600">
+          <p class="text-sm text-gray-300 mb-3">Shareable link created:</p>
           <div class="flex gap-2">
-            <input id="share-link-url" type="text" readonly class="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded text-sm" />
-            <button id="copy-share-link-btn" class="bg-pink-600 text-white px-3 py-2 rounded hover:bg-pink-700 text-sm button-press">
+            <input id="share-link-url" type="text" readonly class="flex-1 px-3 py-2 bg-slate-800 border border-slate-600 rounded text-sm text-gray-300 focus:border-red-600" />
+            <button id="copy-share-link-btn" class="bg-red-700 hover:bg-red-600 text-white px-3 py-2 rounded text-sm button-press shadow-md font-bold">
               Copy
             </button>
           </div>
         </div>
       </div>
 
-      <button id="play-again-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press">
-        Play Again
+      <button id="play-again-btn" class="w-full bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105 button-press shadow-lg hover:shadow-red-900/50">
+        Weave Another Tale
       </button>
     </div>
 
     <!-- Error Display -->
-    <div id="error-message" class="hidden mt-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded fade-in"></div>
+    <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
   </div>
 
   <script>
@@ -525,11 +572,24 @@ export function getHomePage() {
           elements.roomCodeDisplay.textContent = roomCode;
           updatePlayersList(message.players);
           showScreen('lobby');
+
+          // Update selectedRounds from server state
+          if (message.roundsPerPlayer !== undefined) {
+            selectedRounds = message.roundsPerPlayer;
+          }
           updateRoundsPreview(message.players.length);
 
           // Show settings only for host
           if (isHost) {
             elements.gameSettings.classList.remove('hidden');
+            // Update button states to match server state
+            document.querySelectorAll('.rounds-btn').forEach(b => {
+              b.classList.remove('bg-purple-500', 'text-white', 'border-purple-500');
+              b.classList.add('bg-white', 'border-purple-300');
+              if (parseInt(b.dataset.rounds) === selectedRounds) {
+                b.classList.add('bg-purple-500', 'text-white', 'border-purple-500');
+              }
+            });
           } else {
             elements.gameSettings.classList.add('hidden');
           }
@@ -607,12 +667,12 @@ export function getHomePage() {
       isHost = isCurrentHost;
 
       elements.playersList.innerHTML = players.map((player, index) => \`
-        <div class="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm">
-          <div class="flex items-center gap-2">
+        <div class="flex items-center justify-between p-4 bg-slate-800 rounded-lg shadow-md border border-slate-700 hover:border-red-600/50 transition">
+          <div class="flex items-center gap-3">
             <span class="text-2xl">\${index === 0 ? '👑' : '👤'}</span>
-            <span class="font-medium">\${player.name}</span>
+            <span class="font-medium text-gray-200">\${player.name}</span>
           </div>
-          \${index === 0 ? '<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Host</span>' : ''}
+          \${index === 0 ? '<span class="text-xs bg-red-900 text-red-200 px-2 py-1 rounded font-bold">Host</span>' : ''}
         </div>
       \`).join('');
 
@@ -666,13 +726,13 @@ export function getHomePage() {
     function displayStory(story) {
       currentStory = story;
       elements.storyContainer.innerHTML = story.map((entry, index) => \`
-        <div class="story-reveal p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500" style="animation-delay: \${index * 0.1}s">
+        <div class="story-reveal p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg hover:shadow-red-900/30 transition" style="animation-delay: \${index * 0.1}s">
           <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-purple-600">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-700">\${entry.playerName}</span>
-            <span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
+            <span class="text-lg font-bold text-red-500">\${index + 1}.</span>
+            <span class="text-sm font-semibold text-gray-300">\${entry.playerName}</span>
+            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
           </div>
-          <p class="text-gray-800 text-lg">\${entry.sentence}</p>
+          <p class="text-gray-100 text-lg">\${entry.sentence}</p>
         </div>
       \`).join('');
 
@@ -687,17 +747,32 @@ export function getHomePage() {
         return;
       }
 
-      const voices = window.speechSynthesis.getVoices();
-      elements.voiceSelector.innerHTML = '<option>Select voice...</option>' +
-        voices.filter(v => v.lang && v.lang.startsWith('en')).map(v =>
-          \`<option value="\${v.name}">\${v.name} (\${v.lang})</option>\`
-        ).join('');
+      // Function to populate voice dropdown
+      const populateVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) return; // Voices not ready yet
 
-      selectedVoice = voices.find(v => v.default) || voices[0];
+        const englishVoices = voices.filter(v => v.lang && v.lang.startsWith('en'));
+        if (englishVoices.length === 0) return; // No English voices
 
-      elements.voiceSelector.addEventListener('change', (e) => {
-        selectedVoice = voices.find(v => v.name === e.target.value);
-      });
+        elements.voiceSelector.innerHTML = '<option>Select voice...</option>' +
+          englishVoices.map(v =>
+            \`<option value="\${v.name}">\${v.name} (\${v.lang})</option>\`
+          ).join('');
+
+        selectedVoice = englishVoices.find(v => v.default) || englishVoices[0];
+
+        // Add change listener for voice selection
+        elements.voiceSelector.onchange = (e) => {
+          selectedVoice = voices.find(v => v.name === e.target.value) || selectedVoice;
+        };
+      };
+
+      // Handle async voice loading
+      populateVoices();
+
+      // Voices might load asynchronously, listen for when they're ready
+      window.speechSynthesis.onvoiceschanged = populateVoices;
     }
 
     function playStoryAudio() {
@@ -733,9 +808,9 @@ export function getHomePage() {
 
       document.querySelectorAll('.story-reveal').forEach((el, idx) => {
         if (idx === currentSentenceIndex) {
-          el.classList.add('ring-4', 'ring-purple-500', 'bg-purple-100');
+          el.classList.add('ring-4', 'ring-red-600', 'bg-red-900/20');
         } else {
-          el.classList.remove('ring-4', 'ring-purple-500', 'bg-purple-100');
+          el.classList.remove('ring-4', 'ring-red-600', 'bg-red-900/20');
         }
       });
 
@@ -784,7 +859,7 @@ export function getHomePage() {
       elements.pauseAudioBtn.onclick = pauseAudio;
 
       document.querySelectorAll('.story-reveal').forEach(el => {
-        el.classList.remove('ring-4', 'ring-purple-500', 'bg-purple-100');
+        el.classList.remove('ring-4', 'ring-red-600', 'bg-red-900/20');
       });
     }
 
@@ -832,32 +907,45 @@ export function getHomePage() {
   <script src="https://cdn.tailwindcss.com"><\/script>
   <style>
     body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
       min-height: 100vh;
+      color: #f1f5f9;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
     }
   </style>
 </head>
 <body class="p-8">
-  <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">
-    <h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>
-    <p class="text-center text-gray-600 mb-8">A Collaborative Story</p>
+  <div class="max-w-3xl mx-auto rounded-2xl shadow-2xl p-8 border-2 border-red-900 bg-slate-900 relative z-10">
+    <h1 class="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">📝 Exquisite Corpse</h1>
+    <p class="text-center text-gray-400 mb-8 italic">A twisted tale woven in darkness</p>
 
     <div class="space-y-4 mb-8">
       \${currentStory.map((entry, index) => \`
-        <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-l-4 border-purple-500">
+        <div class="p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg">
           <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-purple-600">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-700">\${entry.playerName}</span>
-            <span class="text-xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
+            <span class="text-lg font-bold text-red-500">\${index + 1}.</span>
+            <span class="text-sm font-semibold text-gray-300">\${entry.playerName}</span>
+            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
           </div>
-          <p class="text-gray-800 text-lg">\${entry.sentence}</p>
+          <p class="text-gray-100 text-lg">\${entry.sentence}</p>
         </div>
       \`).join('')}
     </div>
 
     <div class="text-center">
-      <a href="/" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition inline-block">
-        Create Your Own Story
+      <a href="/" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-3 px-6 rounded-lg transition inline-block shadow-lg">
+        Weave Another Tale
       </a>
     </div>
 
@@ -922,7 +1010,7 @@ export function getHomePage() {
     }
 
     function triggerConfetti() {
-      const colors = ['#7c3aed', '#ec4899', '#10b981', '#f59e0b', '#3b82f6'];
+      const colors = ['#dc2626', '#b91c1c', '#991b1b', '#7f1d1d', '#ef4444'];
       for (let i = 0; i < 50; i++) {
         const confetti = document.createElement('div');
         confetti.className = 'confetti';
@@ -931,12 +1019,12 @@ export function getHomePage() {
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
         confetti.style.animationDelay = Math.random() * 0.5 + 's';
         confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confetti.style.boxShadow = '0 0 8px rgba(220, 38, 38, 0.6)';
         document.body.appendChild(confetti);
         setTimeout(() => confetti.remove(), 5000);
       }
     }
   </script>
 </body>
-</html>\`;
+</html>`;
 }
-`;

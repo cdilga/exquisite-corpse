@@ -140,6 +140,7 @@ export class GameRoom {
       type: 'player_joined',
       players: state.players,
       roomCode: state.roomCode,
+      roundsPerPlayer: state.roundsPerPlayer, // Include current rounds setting
     });
   }
 

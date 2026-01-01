@@ -647,16 +647,16 @@ function getScriptSection() {
 
     function displayStory(story) {
       currentStory = story;
-      elements.storyContainer.innerHTML = story.map((entry, index) => \`
-        <div class="story-reveal p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg hover:shadow-red-900/30 transition" style="animation-delay: \${index * 0.1}s">
+      elements.storyContainer.innerHTML = story.map((entry, index) => `
+        <div class="story-reveal p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg hover:shadow-red-900/30 transition" style="animation-delay: ${index * 0.1}s">
           <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-red-500">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-300">\${entry.playerName}</span>
-            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
+            <span class="text-lg font-bold text-red-500">${index + 1}.</span>
+            <span class="text-sm font-semibold text-gray-300">${entry.playerName}</span>
+            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round ${entry.roundNumber || 1}</span>
           </div>
-          <p class="text-gray-100 text-lg">\${entry.sentence}</p>
+          <p class="text-gray-100 text-lg">${entry.sentence}</p>
         </div>
-      \`).join('');
+      `).join('');
 
       initializeTTS();
     }
@@ -802,7 +802,18 @@ function getScriptSection() {
     }
 
     function formatStoryAsHTML() {
-      return \`<!DOCTYPE html>
+      const storyHtml = currentStory.map((entry, index) => `
+        <div class="p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-lg font-bold text-red-500">${index + 1}.</span>
+            <span class="text-sm font-semibold text-gray-300">${entry.playerName}</span>
+            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round ${entry.roundNumber || 1}</span>
+          </div>
+          <p class="text-gray-100 text-lg">${entry.sentence}</p>
+        </div>
+      `).join('');
+
+      return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -835,16 +846,7 @@ function getScriptSection() {
     <p class="text-center text-gray-400 mb-8 italic">A twisted tale woven in darkness</p>
 
     <div class="space-y-4 mb-8">
-      \${currentStory.map((entry, index) => \`
-        <div class="p-4 bg-gradient-to-r from-slate-800 to-slate-900 rounded-lg border-l-4 border-red-600 shadow-lg">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-lg font-bold text-red-500">\${index + 1}.</span>
-            <span class="text-sm font-semibold text-gray-300">\${entry.playerName}</span>
-            <span class="text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded">Round \${entry.roundNumber || 1}</span>
-          </div>
-          <p class="text-gray-100 text-lg">\${entry.sentence}</p>
-        </div>
-      \`).join('')}
+      ${storyHtml}
     </div>
 
     <div class="text-center">
@@ -854,12 +856,12 @@ function getScriptSection() {
     </div>
 
     <div class="mt-8 text-center text-sm text-gray-500">
-      <p>Created \${new Date().toLocaleDateString()}</p>
+      <p>Created ${new Date().toLocaleDateString()}</p>
       <p class="mt-2">Made with ❤️ using Exquisite Corpse</p>
     </div>
   </div>
 </body>
-</html>\`;
+</html>`;
     }
 
     function downloadHtml() {

@@ -158,10 +158,43 @@ function generateStoryHTML(storyData) {
   <title>Exquisite Corpse - Shared Story</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --dark-bg: #0f172a;
+      --dark-card: #1e293b;
+      --dark-secondary: #334155;
+      --crimson: #dc2626;
+      --crimson-dark: #b91c1c;
+      --crimson-light: #ef4444;
+      --text-light: #f1f5f9;
+      --text-muted: #cbd5e1;
+      --border-glow: #991b1b;
+    }
+
     body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
       min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      color: var(--text-light);
+      position: relative;
+    }
+
+    /* Sinister background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 0, 0, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .max-w-3xl {
+      position: relative;
+      z-index: 1;
     }
 
     .story-item {
@@ -196,36 +229,79 @@ function generateStoryHTML(storyData) {
 
     .story-number {
       font-weight: bold;
-      color: #7c3aed;
+      color: var(--crimson);
       font-size: 1.125rem;
     }
 
     .player-name {
       font-weight: 600;
-      color: #374151;
+      color: var(--text-muted);
       font-size: 0.875rem;
     }
 
     .round-badge {
       font-size: 0.75rem;
-      background-color: #ddd6fe;
-      color: #7c3aed;
+      background-color: rgba(220, 38, 38, 0.2);
+      color: var(--crimson-light);
       padding: 0.25rem 0.5rem;
       border-radius: 0.375rem;
+      border: 1px solid var(--border-glow);
     }
 
     .story-text {
-      color: #1f2937;
+      color: var(--text-light);
       font-size: 1.0625rem;
       line-height: 1.6;
     }
 
     .story-item {
       padding: 1rem;
-      background: linear-gradient(to right, #f3f0ff 0%, #faf5ff 100%);
-      border-left: 4px solid #7c3aed;
+      background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-secondary) 100%);
+      border-left: 4px solid var(--crimson);
       border-radius: 0.5rem;
       margin-bottom: 1rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .header-card, .content-card, .cta-card {
+      background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-secondary) 100%);
+      border: 2px solid var(--border-glow);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .header-card h1 {
+      background: linear-gradient(to right, var(--crimson-light), var(--crimson-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-card p {
+      color: var(--text-muted);
+    }
+
+    .cta-card h2 {
+      color: var(--text-light);
+    }
+
+    .cta-link {
+      background: linear-gradient(to right, var(--crimson) var(--crimson-dark));
+      transition: all 0.3s ease;
+    }
+
+    .cta-link:hover {
+      background: linear-gradient(to right, var(--crimson-dark) var(--crimson));
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+    }
+
+    .cta-card p {
+      color: var(--text-muted);
+    }
+
+    .attribution {
+      color: var(--text-muted);
+      opacity: 0.75;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -239,31 +315,31 @@ function generateStoryHTML(storyData) {
 <body class="p-4 sm:p-8">
   <div class="max-w-3xl mx-auto">
     <!-- Header -->
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 mb-8">
-      <h1 class="text-4xl sm:text-5xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>
-      <p class="text-center text-gray-600 mb-4">A Collaborative Story</p>
-      <p class="text-center text-sm text-gray-500">Created ${createdDate}</p>
+    <div class="header-card rounded-2xl p-6 sm:p-8 mb-8">
+      <h1 class="text-4xl sm:text-5xl font-bold text-center mb-2">📝 Exquisite Corpse</h1>
+      <p class="text-center mb-4">A Collaborative Tale Woven in Shadows</p>
+      <p class="text-center text-sm">Created ${createdDate}</p>
     </div>
 
     <!-- Story Content -->
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 mb-8">
+    <div class="content-card rounded-2xl p-6 sm:p-8 mb-8">
       <div class="space-y-4">
         ${storyHTML}
       </div>
     </div>
 
     <!-- Footer with Call to Action -->
-    <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 text-center">
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">🎮 Ready to Create Your Own?</h2>
-      <a href="/" class="inline-block bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-lg transition transform hover:scale-105">
-        Create Your Own Story
+    <div class="cta-card rounded-2xl p-6 sm:p-8 text-center">
+      <h2 class="text-2xl font-bold mb-4">🎮 Weave Your Own Tale?</h2>
+      <a href="/" class="cta-link inline-block text-white font-bold py-3 px-8 rounded-lg transition transform">
+        Begin a New Story
       </a>
-      <p class="text-sm text-gray-500 mt-4">Share your hilarious stories with the world!</p>
+      <p class="mt-4">Share your twisted tales with the world!</p>
     </div>
 
     <!-- Attribution -->
-    <div class="text-center mt-8 text-white text-sm opacity-75">
-      <p>Made with 💜 using Exquisite Corpse</p>
+    <div class="attribution text-center mt-8 text-sm">
+      <p>Made with 🖤 using Exquisite Corpse</p>
     </div>
   </div>
 </body>

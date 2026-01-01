@@ -124,37 +124,8 @@ function getHeadSection() {
   </style>`;
 }
 
-    /* Button Press Effect */
-    .button-press {
-      transition: transform 0.1s ease, box-shadow 0.2s ease;
-    }
-    .button-press:active {
-      transform: scale(0.95);
-    }
-
-    /* Dark card styling */
-    .dark-card {
-      background: linear-gradient(135deg, var(--dark-card) 0%, var(--dark-secondary) 100%);
-      border: 2px solid var(--border-glow);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    }
-
-    .dark-card:hover {
-      box-shadow: 0 12px 40px rgba(220, 38, 38, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      border-color: var(--crimson-light);
-    }
-
-    /* Respect prefers-reduced-motion */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-  </style>
-</head>
-<body class="p-4">
-  <div class="max-w-2xl mx-auto">
+function getBodySection() {
+  return `<div class="max-w-2xl mx-auto">
     <!-- Landing Screen -->
     <div id="landing-screen" class="dark-card rounded-2xl p-8 fade-in">
       <h1 class="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">📝 Exquisite Corpse</h1>
@@ -351,7 +322,8 @@ function getHeadSection() {
 
     <!-- Error Display -->
     <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
-  </div>
+  </div>`;
+}
 
 function getScriptSection() {
   // This returns the raw JavaScript code

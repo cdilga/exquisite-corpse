@@ -1,11 +1,25 @@
 import { GameRoom } from './GameRoom.js';
 import { getHomePage } from './pages/home.js';
+import { handleShareStory, handleViewSharedStory } from './storySharing.js';
 
 export { GameRoom };
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+
+    // API Route: Share story
+    if (url.pathname === '/api/share-story' && request.method === 'POST') {
+      return await handleShareStory(request, env);
+    }
+
+    // Route to shared story page
+    if (url.pathname.startsWith('/story/')) {
+      const storyId = url.pathname.split('/')[2];
+      if (storyId && storyId.length > 0) {
+        return await handleViewSharedStory(storyId, env);
+      }
+    }
 
     // Route to game room Durable Object
     if (url.pathname.startsWith('/room/')) {

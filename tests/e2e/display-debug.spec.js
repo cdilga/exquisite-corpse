@@ -13,8 +13,10 @@ test.describe('Display Issue Debug', () => {
     // Take screenshot
     await page.screenshot({ path: 'test-results/display-initial.png', fullPage: true });
 
-    // Check that no template syntax is visible in the page text
-    const bodyText = await page.textContent('body');
+    // Check that no template syntax is visible in the VISIBLE page text (not script content)
+    const visibleText = await page.evaluate(() => {
+      return document.body.innerText;
+    });
 
     // These patterns should NOT appear in the rendered text
     const badPatterns = [
@@ -26,10 +28,10 @@ test.describe('Display Issue Debug', () => {
     ];
 
     for (const pattern of badPatterns) {
-      if (bodyText.includes(pattern)) {
+      if (visibleText.includes(pattern)) {
         console.error(`Found bad pattern: "${pattern}" in page text`);
       }
-      expect(bodyText).not.toContain(pattern, `Page should not contain template code: ${pattern}`);
+      expect(visibleText).not.toContain(pattern, `Page should not contain template code: ${pattern}`);
     }
   });
 

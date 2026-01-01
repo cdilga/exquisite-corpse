@@ -4,18 +4,12 @@ export function getHomePage() {
   const body = getBodySection();
   const script = getScriptSection();
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-${head}
-</head>
-<body class="p-4">
-${body}
-<script>
-${script}
-</script>
-</body>
-</html>`;
+  return '<!DOCTYPE html>' +
+    '<html lang="en">' +
+    '<head>' + head + '</head>' +
+    '<body class="p-4">' + body +
+    '<script>' + script + '</script>' +
+    '</body></html>';
 }
 
 function getHeadSection() {
@@ -340,7 +334,16 @@ function getScriptSection() {
     };
 
     // Event Listeners
-    elements.createRoomBtn.addEventListener('click', createRoom);
+    console.log('Setting up event listeners...');
+    console.log('Create button:', elements.createRoomBtn);
+
+    if (!elements.createRoomBtn) {
+      console.error('Create room button not found!');
+    } else {
+      elements.createRoomBtn.addEventListener('click', createRoom);
+      console.log('Create room listener attached');
+    }
+
     elements.joinRoomBtn.addEventListener('click', () => joinRoom(elements.roomCodeInput.value));
     elements.startGameBtn.addEventListener('click', startGame);
     elements.submitSentenceBtn.addEventListener('click', submitSentence);
@@ -569,11 +572,11 @@ function getScriptSection() {
 
     // Export functions
     function formatStoryAsText() {
-      let text = '=== EXQUISITE CORPSE STORY ===\n\n';
+      let text = '=== EXQUISITE CORPSE STORY ===\\n\\n';
       currentStory.forEach((entry, i) => {
-        text += (i + 1) + '. [' + entry.playerName + '] ' + entry.sentence + '\n\n';
+        text += (i + 1) + '. [' + entry.playerName + '] ' + entry.sentence + '\\n\\n';
       });
-      text += '\n=== Created with Exquisite Corpse ===\n';
+      text += '\\n=== Created with Exquisite Corpse ===\\n';
       text += 'Generated on ' + new Date().toLocaleDateString();
       return text;
     }
@@ -612,22 +615,22 @@ function getScriptSection() {
           '</div>';
       }).join('');
 
-      return '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
-        '<meta charset="UTF-8">\n' +
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-        '<title>Exquisite Corpse Story</title>\n' +
-        '<script src="https://cdn.tailwindcss.com"><\/script>\n' +
-        '<style>body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }</style>\n' +
-        '</head>\n<body class="p-8">\n' +
-        '<div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">\n' +
-        '<h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>\n' +
-        '<p class="text-center text-gray-600 mb-8">A Collaborative Story</p>\n' +
-        '<div class="space-y-4 mb-8">\n' + storyHtml + '</div>\n' +
-        '<div class="text-center">\n' +
-        '<p>Created ' + new Date().toLocaleDateString() + '</p>\n' +
-        '<p class="mt-2">Made with ❤️ using Exquisite Corpse</p>\n' +
-        '</div>\n' +
-        '</div>\n</body>\n</html>';
+      return '<!DOCTYPE html>\\n<html lang="en">\\n<head>\\n' +
+        '<meta charset="UTF-8">\\n' +
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\\n' +
+        '<title>Exquisite Corpse Story</title>\\n' +
+        '<script src="https://cdn.tailwindcss.com"><\\/script>\\n' +
+        '<style>body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }</style>\\n' +
+        '</head>\\n<body class="p-8">\\n' +
+        '<div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl p-8">\\n' +
+        '<h1 class="text-4xl font-bold text-center mb-2 text-gray-800">📝 Exquisite Corpse</h1>\\n' +
+        '<p class="text-center text-gray-600 mb-8">A Collaborative Story</p>\\n' +
+        '<div class="space-y-4 mb-8">\\n' + storyHtml + '</div>\\n' +
+        '<div class="text-center">\\n' +
+        '<p>Created ' + new Date().toLocaleDateString() + '</p>\\n' +
+        '<p class="mt-2">Made with ❤️ using Exquisite Corpse</p>\\n' +
+        '</div>\\n' +
+        '</div>\\n</body>\\n</html>';
     }
 
     function downloadHtml() {

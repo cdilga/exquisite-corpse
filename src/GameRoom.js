@@ -91,10 +91,6 @@ export class GameRoom {
         await this.handleUpdateGameSettings(playerId, data);
         break;
 
-      case 'update_game_settings':
-        await this.handleUpdateGameSettings(playerId, data);
-        break;
-
       case 'start_game':
         await this.handleStartGame(playerId);
         break;
@@ -411,80 +407,6 @@ export class GameRoom {
         players: state.players,
       });
     }
-  }
-
-  async handleUpdateGameSettings(playerId, data) {
-    const state = await this.getGameState();
-
-    // Only host can update settings
-    if (state.players.length === 0 || state.players[0].id !== playerId) {
-      this.sendToPlayer(playerId, {
-        type: 'error',
-        message: 'Only the host can change game settings',
-      });
-      return;
-    }
-
-    if (state.gameStarted) {
-      this.sendToPlayer(playerId, {
-        type: 'error',
-        message: 'Cannot change settings after game has started',
-      });
-      return;
-    }
-
-    const rounds = parseInt(data.roundsPerPlayer);
-    if (!rounds || rounds < 1 || rounds > 10) {
-      this.sendToPlayer(playerId, {
-        type: 'error',
-        message: 'Invalid number of rounds (1-10)',
-      });
-      return;
-    }
-
-    state.roundsPerPlayer = rounds;
-    await this.saveGameState(state);
-
-    this.broadcast({
-      type: 'game_settings_updated',
-      roundsPerPlayer: rounds,
-      totalTurns: state.players.length * rounds,
-    });
-  }
-
-  async handleStartTTS(playerId) {
-    const state = await this.getGameState();
-
-    if (!state.gameComplete) {
-      this.sendToPlayer(playerId, {
-        type: 'error',
-        message: 'Game must be complete to play audio',
-      });
-      return;
-    }
-
-    const startTime = Date.now() + 1000; // 1 second buffer for sync
-
-    state.ttsState = {
-      isPlaying: true,
-      startedBy: playerId,
-      startTime: startTime,
-      currentSentenceIndex: 0,
-    };
-
-    await this.saveGameState(state);
-
-    this.broadcast({
-      type: 'tts_playback_start',
-      startTime: startTime,
-    });
-  }
-
-  async handleTTSSentenceComplete(playerId, sentenceIndex) {
-    const state = await this.getGameState();
-
-    state.ttsState.currentSentenceIndex = sentenceIndex + 1;
-    await this.saveGameState(state);
   }
 
   async handleUpdateGameSettings(playerId, data) {

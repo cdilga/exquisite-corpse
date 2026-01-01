@@ -6,12 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 # Enable automatic workers.dev subdomain
 workers_dev = true
 
-# KV Namespace for shared stories
-[[kv_namespaces]]
-binding = "SHARED_STORIES"
-id = "dev-shared-stories"
-preview_id = "dev-shared-stories-preview"
-
 # Durable Objects configuration (top-level – useful for local dev/default deployment)
 [[durable_objects.bindings]]
 name = "GAME_ROOM"
@@ -29,12 +23,6 @@ vars = { ENVIRONMENT = "production" }
 routes = [
   { pattern = "exquisite-corpse.dilger.dev/*", zone_name = "dilger.dev" }
 ]
-
-# KV Namespace binding for production (use actual IDs when deployed)
-[[env.production.kv_namespaces]]
-binding = "SHARED_STORIES"
-id = "prod-shared-stories-id"
-preview_id = "prod-shared-stories-preview"
 
 # Repeat the Durable Object binding for production (required!)
 [[env.production.durable_objects.bindings]]

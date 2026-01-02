@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { GameRoom } from './GameRoom.js';
-import { getHomePage } from './pages/home.js';
+import { getHomePage } from './pages/home.generated.js';
 import { handleShareStory, handleViewSharedStory } from './storySharing.js';
 
 export { GameRoom };

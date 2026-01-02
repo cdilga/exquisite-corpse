@@ -2,10 +2,12 @@
   "name": "cloudflare-worker-template",
   "version": "0.1.0",
   "description": "Cloudflare Worker template",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
+    "build": "node scripts/build.js",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --env production",
+    "deploy": "npm run build && wrangler deploy --env production",
     "deploy:beta": "wrangler deploy --env beta",
     "deploy:staging": "wrangler deploy --env staging",
     "tail": "wrangler tail",

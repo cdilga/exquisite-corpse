@@ -595,18 +595,6 @@ function getScriptSection() {
         </div>
       \`).join('');
 
-      // Update rounds selector state
-      const shouldEnable = isCurrentHost;
-      document.querySelectorAll('.rounds-btn, #custom-rounds').forEach(el => {
-        el.disabled = !shouldEnable;
-        if (!shouldEnable) {
-          el.classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-          el.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-      });
-    }
-
       // Show start button only for host
       if (isHost) {
         elements.startGameBtn.classList.remove('hidden');
@@ -712,8 +700,23 @@ function getScriptSection() {
         showError('Please write a sentence');
         return;
       }
+      ws.send(JSON.stringify({
+        type: 'submit_sentence',
+        sentence: sentence
+      }));
+      elements.sentenceInput.value = '';
+    }
 
-      const sentence = currentStory[currentSentenceIndex];
+    function speakNextSentence() {
+      if (!ttsPlaying || currentSentenceIndex >= currentStory.length) {
+        ttsPlaying = false;
+        document.querySelectorAll('.story-reveal').forEach(el => {
+          el.classList.remove('ring-4', 'ring-red-600', 'bg-red-900/20');
+        });
+        return;
+      }
+
+      const currentSentenceData = currentStory[currentSentenceIndex];
 
       document.querySelectorAll('.story-reveal').forEach((el, idx) => {
         if (idx === currentSentenceIndex) {
@@ -723,17 +726,13 @@ function getScriptSection() {
         }
       });
 
-      const utterance = new SpeechSynthesisUtterance(sentence.sentence);
+      const utterance = new SpeechSynthesisUtterance(currentSentenceData.sentence);
       utterance.voice = selectedVoice;
       utterance.rate = 0.9;
       utterance.pitch = 1.0;
 
       utterance.onend = () => {
         currentSentenceIndex++;
-        ws.send(JSON.stringify({
-          type: 'tts_sentence_complete',
-          sentenceIndex: currentSentenceIndex - 1,
-        }));
         speakNextSentence();
       };
 
@@ -760,11 +759,6 @@ function getScriptSection() {
       elements.errorMessage.textContent = message;
       elements.errorMessage.classList.remove('hidden');
       setTimeout(() => elements.errorMessage.classList.add('hidden'), 5000);
-    }
-
-      document.querySelectorAll('.story-reveal').forEach(el => {
-        el.classList.remove('ring-4', 'ring-red-600', 'bg-red-900/20');
-      });
     }
 
     // Export functions

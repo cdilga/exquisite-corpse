@@ -819,7 +819,7 @@ function getScriptSection() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exquisite Corpse Story</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <script src="https://cdn.tailwindcss.com">\${'</'}script>
   <style>
     body {
       background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
@@ -930,7 +930,5 @@ function getScriptSection() {
         setTimeout(() => confetti.remove(), 5000);
       }
     }
-  </script>
-</body>
-</html>`;
+  `;
 }

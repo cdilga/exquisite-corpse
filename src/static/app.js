@@ -84,16 +84,45 @@ if (!elements.createRoomBtn) {
   console.log('Create room listener attached');
 }
 
-elements.joinRoomBtn.addEventListener('click', () => joinRoom(elements.roomCodeInput.value));
-elements.startGameBtn.addEventListener('click', startGame);
-elements.submitSentenceBtn.addEventListener('click', submitSentence);
-elements.playAgainBtn.addEventListener('click', () => location.reload());
-elements.manualReconnectBtn.addEventListener('click', forceReconnect);
+if (elements.joinRoomBtn) {
+  elements.joinRoomBtn.addEventListener('click', () => joinRoom(elements.roomCodeInput.value));
+}
+if (elements.startGameBtn) {
+  elements.startGameBtn.addEventListener('click', startGame);
+}
+if (elements.submitSentenceBtn) {
+  elements.submitSentenceBtn.addEventListener('click', submitSentence);
+}
+if (elements.playAgainBtn) {
+  elements.playAgainBtn.addEventListener('click', () => location.reload());
+}
+if (elements.manualReconnectBtn) {
+  elements.manualReconnectBtn.addEventListener('click', forceReconnect);
+}
 
 document.querySelectorAll('.rounds-btn').forEach(btn => {
   btn.addEventListener('click', function() {
+    console.log('Rounds button clicked:', this.dataset.rounds);
     selectedRounds = parseInt(this.dataset.rounds);
     updateTurnsPreview();
+    // Send update to server if connected
+    console.log('WS state:', ws ? ws.readyState : 'null', 'OPEN is:', WebSocket.OPEN);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      console.log('Sending update_game_settings with rounds:', selectedRounds);
+      ws.send(JSON.stringify({
+        type: 'update_game_settings',
+        roundsPerPlayer: selectedRounds
+      }));
+    } else {
+      console.log('WebSocket not ready, cannot send settings');
+    }
+    // Update button styling
+    document.querySelectorAll('.rounds-btn').forEach(b => {
+      b.classList.remove('bg-red-900', 'border-red-600', 'text-white');
+      b.classList.add('bg-slate-800', 'border-slate-600');
+    });
+    this.classList.remove('bg-slate-800', 'border-slate-600');
+    this.classList.add('bg-red-900', 'border-red-600', 'text-white');
   });
 });
 
@@ -185,10 +214,11 @@ function handleMessage(message) {
       if (isHost) {
         elements.gameSettings.classList.remove('hidden');
         document.querySelectorAll('.rounds-btn').forEach(b => {
-          b.classList.remove('bg-purple-500', 'text-white', 'border-purple-500');
-          b.classList.add('bg-white', 'border-purple-300');
+          b.classList.remove('bg-red-900', 'text-white', 'border-red-600');
+          b.classList.add('bg-slate-800', 'border-slate-600');
           if (parseInt(b.dataset.rounds) === selectedRounds) {
-            b.classList.add('bg-purple-500', 'text-white', 'border-purple-500');
+            b.classList.remove('bg-slate-800', 'border-slate-600');
+            b.classList.add('bg-red-900', 'text-white', 'border-red-600');
           }
         });
       } else {

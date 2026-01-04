@@ -6,16 +6,16 @@ compatibility_flags = ["nodejs_compat"]
 # Enable automatic workers.dev subdomain
 workers_dev = true
 
-# KV Namespace for shared stories
-[[kv_namespaces]]
-binding = "SHARED_STORIES"
-id = "exquisite-corpse-shared-stories"
-preview_id = "exquisite-corpse-shared-stories-preview"
-
 # Durable Objects configuration (top-level – useful for local dev/default deployment)
 [[durable_objects.bindings]]
 name = "GAME_ROOM"
 class_name = "GameRoom"
+
+# KV namespace for sharing stories (local dev - persisted locally)
+[[kv_namespaces]]
+binding = "SHARED_STORIES"
+id = "shared-stories-local"
+preview_id = "shared-stories-preview"
 
 # Migrations (top-level – inherited by environments)
 [[migrations]]
@@ -35,7 +35,7 @@ routes = [
 name = "GAME_ROOM"
 class_name = "GameRoom"
 
-# Repeat KV namespace for production
+# KV namespace for production
 [[env.production.kv_namespaces]]
 binding = "SHARED_STORIES"
-id = "exquisite-corpse-shared-stories"
+id = "TO_BE_CREATED"

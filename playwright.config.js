@@ -30,8 +30,9 @@ export default defineConfig({
   webServer: process.env.DEPLOYED_URL
     ? undefined
     : {
-        command: 'npm run dev',
+        command: `npx wrangler dev --port ${PORT}`,
         port: PORT,
         reuseExistingServer: !process.env.CI,
+        timeout: 120000,
       },
 });

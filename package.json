@@ -22,7 +22,7 @@
     "test:deployed": "DEPLOYED_URL=https://$(npm pkg get name | tr -d '\"').dilger.dev playwright test"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.5.0",
+    "@cloudflare/vitest-pool-workers": "^0.11.1",
     "@playwright/test": "^1.48.0",
     "miniflare": "^3.0.0",
     "vitest": "^2.1.0",

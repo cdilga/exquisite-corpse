@@ -22,7 +22,7 @@ test.describe('Full Game Flow - A, B, C', () => {
   });
 
   test('A1: Player 1 creates room and sees it ready for game', async () => {
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     await page1.waitForLoadState('networkidle');
 
     // Create room as Player 1
@@ -37,7 +37,7 @@ test.describe('Full Game Flow - A, B, C', () => {
     console.log('Created room:', roomCode);
 
     // Verify room code format
-    expect(roomCode).toMatch(/^[A-Z]{4}$/);
+    expect(roomCode).toMatch(/^[A-Z0-9]{4}$/);
 
     // Verify lobby is displayed
     const lobbyScreen = page1.locator('#lobby-screen');
@@ -50,7 +50,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('A2: Player 2 joins the room with room code', async () => {
     // Player 1: Create room
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -59,11 +59,11 @@ test.describe('Full Game Flow - A, B, C', () => {
     roomCode = await roomCodeDisplay.textContent();
 
     // Player 2: Join room
-    await page2.goto('http://localhost:8787');
+    await page2.goto('/');
     await page2.waitForLoadState('networkidle');
 
     // Find and fill room code input
-    const roomInput = page2.locator('#join-room-input');
+    const roomInput = page2.locator('#room-code-input');
     await expect(roomInput).toBeVisible();
     await roomInput.fill(roomCode);
 
@@ -93,7 +93,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('A3: Game starts and player 1 receives their turn', async () => {
     // Setup: Player 1 creates, Player 2 joins
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -101,8 +101,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -135,7 +135,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('A4: Player 1 submits sentence, Player 2 gets turn with only previous sentence', async () => {
     // Setup: Create room, player 2 joins, start game
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -143,8 +143,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -185,7 +185,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('B1: Story completes and shows story_complete on results screen', async () => {
     // Setup with 2 players
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -193,8 +193,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -230,7 +230,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('B2: Story displays with all sentences and author names on results', async () => {
     // Setup and play game
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Alice'));
     await page1.click('#create-room-btn');
 
@@ -238,8 +238,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Bob'));
     await page2.click('#join-room-btn');
@@ -281,7 +281,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('C1: Download story as TXT file', async () => {
     // Setup and play game to completion
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -289,8 +289,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -330,7 +330,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('C2: Download story as HTML file', async () => {
     // Setup and play game
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -338,8 +338,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -379,7 +379,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('C3: Generate and copy share link', async () => {
     // Setup and play game
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -387,8 +387,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');
@@ -433,7 +433,7 @@ test.describe('Full Game Flow - A, B, C', () => {
 
   test('C4: Copy share link to clipboard', async () => {
     // Setup and play game
-    await page1.goto('http://localhost:8787');
+    await page1.goto('/');
     page1.once('dialog', dialog => dialog.accept('Player One'));
     await page1.click('#create-room-btn');
 
@@ -441,8 +441,8 @@ test.describe('Full Game Flow - A, B, C', () => {
     await expect(roomCodeDisplay).toBeVisible({ timeout: 5000 });
     roomCode = await roomCodeDisplay.textContent();
 
-    await page2.goto('http://localhost:8787');
-    const roomInput = page2.locator('#join-room-input');
+    await page2.goto('/');
+    const roomInput = page2.locator('#room-code-input');
     await roomInput.fill(roomCode);
     page2.once('dialog', dialog => dialog.accept('Player Two'));
     await page2.click('#join-room-btn');

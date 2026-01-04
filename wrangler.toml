@@ -11,6 +11,12 @@ workers_dev = true
 name = "GAME_ROOM"
 class_name = "GameRoom"
 
+# KV namespace for sharing stories (local dev - persisted locally)
+[[kv_namespaces]]
+binding = "SHARED_STORIES"
+id = "shared-stories-local"
+preview_id = "shared-stories-preview"
+
 # Migrations (top-level – inherited by environments)
 [[migrations]]
 tag = "v1"
@@ -28,3 +34,8 @@ routes = [
 [[env.production.durable_objects.bindings]]
 name = "GAME_ROOM"
 class_name = "GameRoom"
+
+# KV namespace for production
+[[env.production.kv_namespaces]]
+binding = "SHARED_STORIES"
+id = "TO_BE_CREATED"

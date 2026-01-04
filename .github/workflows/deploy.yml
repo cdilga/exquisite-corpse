@@ -32,9 +32,34 @@ jobs:
           # npm ci is preferred in CI but causes issues with some automation tools
           npm install
 
-      # Uncomment the step below once you have tests
-      # - name: Run tests
-      #   run: npm test
+      - name: Build
+        run: npm run build
+
+      - name: Setup KV Namespace for Production
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Create KV namespace if it doesn't exist
+          KV_LIST=$(wrangler kv namespace list 2>&1)
+          if echo "$KV_LIST" | grep -q "exquisite-corpse-shared-stories"; then
+            echo "✅ KV namespace already exists"
+            KV_ID=$(echo "$KV_LIST" | grep "exquisite-corpse-shared-stories" | grep -oP '"id":\s*"\K[^"]+' | head -1)
+          else
+            echo "📦 Creating KV namespace..."
+            CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories" 2>&1)
+            echo "$CREATE_OUTPUT"
+            KV_ID=$(echo "$CREATE_OUTPUT" | grep -oP 'id = "\K[^"]+' | head -1)
+          fi
+          echo "KV_ID=$KV_ID" >> $GITHUB_ENV
+          echo "✅ KV namespace ID: $KV_ID"
+
+          # Update wrangler.toml with the actual KV ID
+          if [ -n "$KV_ID" ]; then
+            sed -i "s/id = \"TO_BE_CREATED\"/id = \"$KV_ID\"/" wrangler.toml
+            echo "✅ Updated wrangler.toml with KV ID"
+          fi
 
       - name: Deploy to Cloudflare Production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -96,6 +121,33 @@ jobs:
                 body: `🚀 **Deployed to Production**\n\n${urlInfo}\n📝 **Commit**: ${commit}`
               });
             }
+
+      - name: Setup KV Namespace for Preview
+        if: github.event_name == 'pull_request'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Create or get preview KV namespace
+          KV_LIST=$(wrangler kv namespace list 2>&1)
+          if echo "$KV_LIST" | grep -q "exquisite-corpse-shared-stories-preview"; then
+            echo "✅ Preview KV namespace already exists"
+            KV_ID=$(echo "$KV_LIST" | grep "exquisite-corpse-shared-stories-preview" | grep -oP '"id":\s*"\K[^"]+' | head -1)
+          else
+            echo "📦 Creating preview KV namespace..."
+            CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories-preview" 2>&1)
+            echo "$CREATE_OUTPUT"
+            KV_ID=$(echo "$CREATE_OUTPUT" | grep -oP 'id = "\K[^"]+' | head -1)
+          fi
+          echo "PREVIEW_KV_ID=$KV_ID" >> $GITHUB_ENV
+          echo "✅ Preview KV namespace ID: $KV_ID"
+
+          # Update wrangler.toml to use preview KV for the default env
+          if [ -n "$KV_ID" ]; then
+            sed -i "s/id = \"shared-stories-local\"/id = \"$KV_ID\"/" wrangler.toml
+            sed -i "s/preview_id = \"shared-stories-preview\"/preview_id = \"$KV_ID\"/" wrangler.toml
+            echo "✅ Updated wrangler.toml with preview KV ID"
+          fi
 
       - name: Deploy PR Preview
         if: github.event_name == 'pull_request'

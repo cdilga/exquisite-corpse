@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { GameRoom } from './GameRoom.js';
-import { getHomePage } from './pages/home.js';
+import { getHomePage } from './pages/home.generated.js';
 import { handleShareStory, handleViewSharedStory } from './storySharing.js';
 
-const app = new Hono();
-
 export { GameRoom };
+
+const app = new Hono();
 
 // Middleware to attach environment
 app.use('*', (c, next) => {
@@ -50,8 +50,8 @@ app.all('/room/:roomCode', async (c) => {
   return stub.fetch(request);
 });
 
-// 404 handler
-app.notFound((c) => {
+// Fallback 404
+app.all('*', (c) => {
   return c.text('Not Found', 404);
 });
 

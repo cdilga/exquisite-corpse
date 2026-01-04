@@ -142,4 +142,63 @@ test.describe('Display Issue Debug', () => {
       }
     }
   });
+
+  test('page should not have duplicate content or visible JavaScript', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // Check that the main title only appears once
+    const mainTitles = await page.locator('h1:has-text("Exquisite Corpse")').count();
+    expect(mainTitles).toBe(1);
+
+    // Get all visible text
+    const visibleText = await page.evaluate(() => document.body.innerText);
+
+    // JavaScript function definitions should NOT be visible in rendered page
+    const jsBadPatterns = [
+      'function ',           // Function definitions
+      'const elements',      // Variable declarations
+      'document.getElementById', // DOM manipulation code
+      'addEventListener',    // Event listener code
+      'WebSocket',           // WebSocket code visible
+      'async function',      // Async function definitions
+      'window.',             // Window object references
+      '= () =>',             // Arrow function assignments
+    ];
+
+    for (const pattern of jsBadPatterns) {
+      expect(visibleText).not.toContain(pattern);
+    }
+
+    // Count occurrences of main heading text (should appear only once or twice max with subtitle)
+    const corpseCount = (visibleText.match(/Exquisite Corpse/g) || []).length;
+    expect(corpseCount).toBeLessThanOrEqual(2); // Main title + possibly in footer or subtitle
+
+    // Screenshot for debugging if test fails
+    await page.screenshot({ path: 'test-results/duplicate-check.png', fullPage: true });
+  });
+
+  test('page HTML structure is valid (no premature script closing)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    // The main test: visible DOM should not contain raw HTML/script structure
+    // If script block terminates prematurely, the rest leaks into visible DOM
+    const visibleText = await page.evaluate(() => document.body.innerText);
+
+    // These patterns indicate the script block closed prematurely
+    expect(visibleText).not.toContain('</script>');
+    expect(visibleText).not.toContain('<script');
+    expect(visibleText).not.toContain('</body>');
+    expect(visibleText).not.toContain('</html>');
+    expect(visibleText).not.toContain('<!DOCTYPE');
+
+    // Check the actual DOM structure - should only have one body element
+    const bodyCount = await page.evaluate(() => document.querySelectorAll('body').length);
+    expect(bodyCount).toBe(1);
+
+    // Check we don't have multiple main content areas (sign of duplication)
+    const mainTitleCount = await page.locator('h1').count();
+    expect(mainTitleCount).toBeLessThanOrEqual(2); // Allow for potential subtitle
+  });
 });

@@ -80,6 +80,7 @@ export class GameRoom {
   }
 
   async handleMessage(playerId, data, webSocket) {
+    console.log('handleMessage:', data.type, 'from', playerId);
     const state = await this.getGameState();
 
     switch (data.type) {
@@ -240,6 +241,7 @@ export class GameRoom {
       playerName: newPlayer.name,
       players: state.players,
       roomCode: state.roomCode,
+      roundsPerPlayer: state.roundsPerPlayer, // Include current rounds setting
     });
   }
 
@@ -269,6 +271,7 @@ export class GameRoom {
     state.story = [];
     // Calculate total turns based on players and rounds
     state.totalTurns = state.players.length * state.roundsPerPlayer;
+    console.log('Starting game with', state.players.length, 'players,', state.roundsPerPlayer, 'rounds, total turns:', state.totalTurns);
     await this.saveGameState(state);
 
     // Notify all players game has started
@@ -455,6 +458,7 @@ export class GameRoom {
     }
 
     state.roundsPerPlayer = rounds;
+    console.log('Updated game settings: roundsPerPlayer =', rounds, 'for', state.players.length, 'players');
     await this.saveGameState(state);
 
     this.broadcast({

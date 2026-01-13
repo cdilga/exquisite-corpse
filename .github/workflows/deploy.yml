@@ -43,8 +43,8 @@ jobs:
         run: |
           # List KV namespaces as JSON and parse with jq
           echo "Fetching KV namespaces..."
-          KV_JSON=$(wrangler kv namespace list --json 2>/dev/null || echo "[]")
-          echo "KV_JSON: $KV_JSON"
+          KV_JSON=$(wrangler kv namespace list --json 2>&1 || echo "[]")
+          echo "KV namespaces response: $KV_JSON"
 
           # Check if our namespace exists and get its ID
           KV_ID=$(echo "$KV_JSON" | jq -r '.[] | select(.title == "exquisite-corpse-shared-stories") | .id' 2>/dev/null || echo "")
@@ -53,11 +53,24 @@ jobs:
             echo "✅ KV namespace already exists with ID: $KV_ID"
           else
             echo "📦 Creating KV namespace..."
+            set +e  # Disable exit on error temporarily
             CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories" 2>&1)
+            CREATE_EXIT_CODE=$?
+            set -e  # Re-enable exit on error
+
+            echo "Create command output:"
             echo "$CREATE_OUTPUT"
-            # Parse the ID from the create output (format: id = "...")
-            KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
-            echo "Created KV namespace with ID: $KV_ID"
+            echo "Exit code: $CREATE_EXIT_CODE"
+
+            if [ $CREATE_EXIT_CODE -eq 0 ]; then
+              # Parse the ID from the create output (format: id = "...")
+              KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
+              echo "✅ Created KV namespace with ID: $KV_ID"
+            else
+              echo "❌ Failed to create KV namespace"
+              echo "Error details: $CREATE_OUTPUT"
+              exit 1
+            fi
           fi
 
           if [ -z "$KV_ID" ]; then
@@ -142,7 +155,8 @@ jobs:
         run: |
           # List KV namespaces as JSON and parse with jq
           echo "Fetching KV namespaces..."
-          KV_JSON=$(wrangler kv namespace list --json 2>/dev/null || echo "[]")
+          KV_JSON=$(wrangler kv namespace list --json 2>&1 || echo "[]")
+          echo "KV namespaces response: $KV_JSON"
 
           # Check if our preview namespace exists and get its ID
           KV_ID=$(echo "$KV_JSON" | jq -r '.[] | select(.title == "exquisite-corpse-shared-stories-preview") | .id' 2>/dev/null || echo "")
@@ -151,11 +165,23 @@ jobs:
             echo "✅ Preview KV namespace already exists with ID: $KV_ID"
           else
             echo "📦 Creating preview KV namespace..."
+            set +e  # Disable exit on error temporarily
             CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories-preview" 2>&1)
+            CREATE_EXIT_CODE=$?
+            set -e  # Re-enable exit on error
+
+            echo "Create command output:"
             echo "$CREATE_OUTPUT"
-            # Parse the ID from the create output
-            KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
-            echo "Created preview KV namespace with ID: $KV_ID"
+            echo "Exit code: $CREATE_EXIT_CODE"
+
+            if [ $CREATE_EXIT_CODE -eq 0 ]; then
+              # Parse the ID from the create output
+              KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
+              echo "✅ Created preview KV namespace with ID: $KV_ID"
+            else
+              echo "⚠️ Failed to create KV namespace, will use placeholder"
+              echo "Error details: $CREATE_OUTPUT"
+            fi
           fi
 
           if [ -z "$KV_ID" ]; then

@@ -16,6 +16,9 @@ function getHeadSection() {
   return `  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Exquisite Corpse - Collaborative Story Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
@@ -134,6 +137,60 @@ function getHeadSection() {
       border-color: var(--crimson-light);
     }
 
+    /* Name Modal Styles */
+    .modal-backdrop-enter {
+      animation: backdropFadeIn 0.3s ease-out forwards;
+    }
+    @keyframes backdropFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-enter {
+      animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .modal-glow {
+      animation: modalGlowPulse 3s ease-in-out infinite;
+      box-shadow: 0 0 40px rgba(220, 38, 38, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    @keyframes modalGlowPulse {
+      0%, 100% {
+        box-shadow: 0 0 40px rgba(220, 38, 38, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+        border-color: rgba(220, 38, 38, 0.8);
+      }
+      50% {
+        box-shadow: 0 0 60px rgba(220, 38, 38, 0.5), 0 20px 60px rgba(0, 0, 0, 0.5);
+        border-color: rgba(220, 38, 38, 1);
+      }
+    }
+    .modal-title {
+      text-shadow: 0 0 20px rgba(220, 38, 38, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+      font-family: 'Cinzel', Georgia, serif;
+    }
+    .name-input {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .name-input:focus {
+      box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+    }
+    .name-input.shake {
+      animation: inputShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+    }
+    @keyframes inputShake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+      20%, 40%, 60%, 80% { transform: translateX(8px); }
+    }
+
     /* Respect prefers-reduced-motion */
     @media (prefers-reduced-motion: reduce) {
       * {
@@ -169,7 +226,7 @@ function getBodySection() {
           <input
             type="text"
             id="room-code-input"
-            placeholder="Enter 4-letter room code"
+            placeholder="CODE"
             maxlength="4"
             class="flex-1 px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 uppercase text-center text-2xl font-bold tracking-wider bg-slate-800 text-white placeholder-gray-600 transition"
           />
@@ -342,6 +399,51 @@ function getBodySection() {
 
     <!-- Error Display -->
     <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
+  </div>
+
+  <!-- Name Entry Modal -->
+  <div id="name-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div id="name-modal-backdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm modal-backdrop-enter"></div>
+    <div id="name-modal-content" class="relative w-full max-w-md modal-enter">
+      <div class="dark-card rounded-2xl p-8 shadow-2xl border-2 border-red-600 modal-glow">
+        <!-- Decorative top accent -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent shadow-lg shadow-red-600/50"></div>
+
+        <h2 class="text-4xl font-bold text-center mb-2 text-red-500 modal-title tracking-wide">
+          Enter the Darkness
+        </h2>
+        <p class="text-center text-gray-400 mb-6 italic text-sm">
+          Whisper your name to the void...
+        </p>
+
+        <div class="space-y-4">
+          <div>
+            <input
+              type="text"
+              id="name-input"
+              placeholder="Your name..."
+              maxlength="30"
+              autocomplete="off"
+              class="w-full px-4 py-3 border-2 border-slate-600 rounded-lg focus:outline-none focus:border-red-600 focus:ring-2 focus:ring-red-600/30 bg-slate-800 text-white placeholder-gray-500 transition-all text-lg name-input"
+            />
+            <p id="name-error" class="hidden text-red-400 text-sm mt-2 ml-1">
+              The darkness requires a name...
+            </p>
+          </div>
+
+          <button
+            id="name-submit-btn"
+            class="w-full bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition-all transform hover:scale-105 button-press shadow-lg hover:shadow-red-900/70 relative overflow-hidden"
+          >
+            <span class="relative z-10">Embrace the Shadows</span>
+            <div class="absolute inset-0 bg-gradient-to-r from-red-600 to-red-800 opacity-0 hover:opacity-100 transition-opacity"></div>
+          </button>
+        </div>
+
+        <!-- Decorative bottom accent -->
+        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-red-600 to-transparent shadow-lg shadow-red-600/50"></div>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -414,7 +516,14 @@ function getScriptSection() {
       shareLinkResult: document.getElementById('share-link-result'),
       shareLinkUrl: document.getElementById('share-link-url'),
       copyShareLinkBtn: document.getElementById('copy-share-link-btn'),
+      nameModal: document.getElementById('name-modal'),
+      nameInput: document.getElementById('name-input'),
+      nameSubmitBtn: document.getElementById('name-submit-btn'),
+      nameError: document.getElementById('name-error'),
     };
+
+    // Modal state
+    let nameModalResolve = null;
 
     // Event Listeners
     console.log('Setting up event listeners...');
@@ -440,9 +549,51 @@ function getScriptSection() {
       });
     });
 
+    // Modal functions
+    function showNameModal() {
+      return new Promise((resolve) => {
+        nameModalResolve = resolve;
+        elements.nameInput.value = '';
+        elements.nameError.classList.add('hidden');
+        elements.nameModal.classList.remove('hidden');
+        setTimeout(() => elements.nameInput.focus(), 100);
+      });
+    }
+
+    function hideNameModal() {
+      elements.nameModal.classList.add('hidden');
+    }
+
+    function validateAndSubmitName() {
+      const name = elements.nameInput.value.trim();
+      if (!name) {
+        elements.nameInput.classList.add('shake');
+        elements.nameError.classList.remove('hidden');
+        setTimeout(() => elements.nameInput.classList.remove('shake'), 500);
+        return;
+      }
+      hideNameModal();
+      if (nameModalResolve) {
+        nameModalResolve(name);
+        nameModalResolve = null;
+      }
+    }
+
+    // Set up modal event listeners
+    if (elements.nameSubmitBtn) {
+      elements.nameSubmitBtn.addEventListener('click', validateAndSubmitName);
+    }
+    if (elements.nameInput) {
+      elements.nameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          validateAndSubmitName();
+        }
+      });
+    }
+
     // Placeholder functions - will be filled in next
-    function createRoom() {
-      const name = prompt('Enter your name:');
+    async function createRoom() {
+      const name = await showNameModal();
       if (!name) return;
       playerName = name;
       const code = generateRoomCode();
@@ -458,12 +609,12 @@ function getScriptSection() {
       return Array.from({length: 4}, () => String.fromCharCode(65 + Math.random() * 26)).join('');
     }
 
-    function joinRoom(code) {
+    async function joinRoom(code) {
       if (code.length !== 4) {
         showError('Room code must be 4 characters');
         return;
       }
-      const name = prompt('Enter your name:');
+      const name = await showNameModal();
       if (!name) return;
       playerName = name;
       roomCode = code;

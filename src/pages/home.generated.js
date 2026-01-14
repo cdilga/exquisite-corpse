@@ -31,6 +31,7 @@ html, body {
   height: 100%;
   touch-action: none;
   overscroll-behavior: none;
+  -webkit-overscroll-behavior: none;
 }
 
 body {
@@ -47,6 +48,7 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  -webkit-overscroll-behavior: contain;
   scroll-behavior: smooth;
   touch-action: pan-y;
 }

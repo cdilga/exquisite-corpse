@@ -7,14 +7,14 @@ export function getHomePage() {
   return '<!DOCTYPE html>' +
     '<html lang="en">' +
     '<head>' + head + '</head>' +
-    '<body class="p-4">' + body +
+    '<body>' + body +
     '<script>' + script + '</script>' +
     '</body></html>';
 }
 
 function getHeadSection() {
   return `  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Exquisite Corpse - Collaborative Story Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,12 +33,42 @@ function getHeadSection() {
       --border-glow: #991b1b;
     }
 
+    /* Lock the viewport - no body scrolling */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      overscroll-behavior: none;
+    }
+
     body {
       background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
-      min-height: 100vh;
       color: var(--text-light);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      position: relative;
+    }
+
+    /* App container - handles all internal scrolling */
+    .app-container {
+      position: fixed;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scroll-behavior: smooth;
+      touch-action: pan-y;
+    }
+
+    /* Inner content wrapper for padding */
+    .app-content {
+      min-height: 100%;
+      padding: 1rem;
+      padding-bottom: env(safe-area-inset-bottom, 1rem);
     }
 
     /* Sinister background texture */
@@ -202,7 +232,9 @@ function getHeadSection() {
 }
 
 function getBodySection() {
-  return `<div class="max-w-2xl mx-auto">
+  return `<div class="app-container">
+  <div class="app-content">
+  <div class="max-w-2xl mx-auto">
     <!-- Landing Screen -->
     <div id="landing-screen" class="dark-card rounded-2xl p-8 fade-in">
       <h1 class="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">📝 Exquisite Corpse</h1>
@@ -399,6 +431,8 @@ function getBodySection() {
 
     <!-- Error Display -->
     <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
+  </div>
+  </div>
   </div>
 
   <!-- Name Entry Modal -->

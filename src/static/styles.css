@@ -130,6 +130,70 @@ body::before {
   border-color: var(--crimson-light);
 }
 
+/* Name Modal Styles */
+.modal-backdrop-enter {
+  animation: backdropFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-enter {
+  animation: modalSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-glow {
+  animation: modalGlowPulse 3s ease-in-out infinite;
+  box-shadow: 0 0 40px rgba(220, 38, 38, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes modalGlowPulse {
+  0%, 100% {
+    box-shadow: 0 0 40px rgba(220, 38, 38, 0.3), 0 20px 60px rgba(0, 0, 0, 0.5);
+    border-color: rgba(220, 38, 38, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 60px rgba(220, 38, 38, 0.5), 0 20px 60px rgba(0, 0, 0, 0.5);
+    border-color: rgba(220, 38, 38, 1);
+  }
+}
+
+.modal-title {
+  text-shadow: 0 0 20px rgba(220, 38, 38, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.name-input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.name-input:focus {
+  box-shadow: 0 0 20px rgba(220, 38, 38, 0.2);
+}
+
+.name-input.shake {
+  animation: inputShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
 /* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   * {

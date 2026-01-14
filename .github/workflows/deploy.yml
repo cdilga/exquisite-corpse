@@ -203,9 +203,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # Deploy with PR-specific name
+          # Deploy with PR-specific name (must be lowercase, alphanumeric, and dashes only)
           PR_NAME="${GITHUB_HEAD_REF//[^a-zA-Z0-9-]/-}"
-          DEPLOY_OUTPUT=$(wrangler deploy --name "pr-${PR_NAME}-${{ github.event.pull_request.number }}" 2>&1 | tee /dev/stderr)
+          PR_NAME="${PR_NAME,,}"  # Convert to lowercase
+          WORKER_NAME="pr-${PR_NAME}-${{ github.event.pull_request.number }}"
+          echo "Deploying with worker name: $WORKER_NAME"
+          DEPLOY_OUTPUT=$(wrangler deploy --name "$WORKER_NAME" --env="" 2>&1 | tee /dev/stderr)
           echo "DEPLOY_OUTPUT<<EOF" >> $GITHUB_ENV
           echo "$DEPLOY_OUTPUT" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV

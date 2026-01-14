@@ -20,8 +20,17 @@ export function getHomePage() {
   --border-glow: #991b1b;
 }
 
-/* Lock the viewport - no body scrolling */
-html, body {
+/* Lock the viewport - no body scrolling (ryOS approach) */
+html {
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  -webkit-overscroll-behavior: none;
+  -webkit-overscroll-behavior-x: none;
+  -webkit-overscroll-behavior-y: none;
+}
+
+body {
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -29,12 +38,16 @@ html, body {
   inset: 0;
   width: 100%;
   height: 100%;
-  touch-action: none;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
   -webkit-overscroll-behavior: none;
-}
-
-body {
+  -webkit-overscroll-behavior-x: none;
+  -webkit-overscroll-behavior-y: none;
+  touch-action: none;
+  -ms-touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
   background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
   color: var(--text-light);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -47,10 +60,14 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
-  -webkit-overscroll-behavior: contain;
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  overscroll-behavior-y: none;
+  -webkit-overscroll-behavior: none;
+  -webkit-overscroll-behavior-x: none;
+  -webkit-overscroll-behavior-y: none;
   scroll-behavior: smooth;
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
 }
 
 /* Inner content wrapper for padding */

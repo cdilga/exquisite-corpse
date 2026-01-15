@@ -193,6 +193,21 @@ body::before {
   border-color: var(--crimson-light);
 }
 
+/* Modal scroll lock - prevents background scrolling when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+body.modal-open .app-container {
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
+#name-modal:not(.hidden) ~ .app-container,
+#name-modal:not(.hidden) + .app-container {
+  overflow: hidden !important;
+}
+
 /* Name Modal Styles */
 .modal-backdrop-enter {
   animation: backdropFadeIn 0.3s ease-out forwards;
@@ -586,7 +601,72 @@ const elements = {
   shareLinkResult: document.getElementById('share-link-result'),
   shareLinkUrl: document.getElementById('share-link-url'),
   copyShareLinkBtn: document.getElementById('copy-share-link-btn'),
+  // Modal elements
+  nameModal: document.getElementById('name-modal'),
+  nameInput: document.getElementById('name-input'),
+  nameSubmitBtn: document.getElementById('name-submit-btn'),
+  nameError: document.getElementById('name-error'),
 };
+
+// Modal state
+let nameModalResolve = null;
+
+// Modal functions
+function showNameModal() {
+  return new Promise((resolve) => {
+    nameModalResolve = resolve;
+    if (elements.nameInput) {
+      elements.nameInput.value = '';
+    }
+    if (elements.nameError) {
+      elements.nameError.classList.add('hidden');
+    }
+    if (elements.nameModal) {
+      elements.nameModal.classList.remove('hidden');
+      // Prevent body scroll when modal is open
+      document.body.classList.add('modal-open');
+      setTimeout(() => elements.nameInput && elements.nameInput.focus(), 100);
+    }
+  });
+}
+
+function hideNameModal() {
+  if (elements.nameModal) {
+    elements.nameModal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  }
+}
+
+function validateAndSubmitName() {
+  const name = elements.nameInput ? elements.nameInput.value.trim() : '';
+  if (!name) {
+    if (elements.nameInput) {
+      elements.nameInput.classList.add('shake');
+      setTimeout(() => elements.nameInput.classList.remove('shake'), 500);
+    }
+    if (elements.nameError) {
+      elements.nameError.classList.remove('hidden');
+    }
+    return;
+  }
+  hideNameModal();
+  if (nameModalResolve) {
+    nameModalResolve(name);
+    nameModalResolve = null;
+  }
+}
+
+// Set up modal event listeners
+if (elements.nameSubmitBtn) {
+  elements.nameSubmitBtn.addEventListener('click', validateAndSubmitName);
+}
+if (elements.nameInput) {
+  elements.nameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      validateAndSubmitName();
+    }
+  });
+}
 
 // Event Listeners
 console.log('Setting up event listeners...');
@@ -642,8 +722,8 @@ document.querySelectorAll('.rounds-btn').forEach(btn => {
 });
 
 // Room Management Functions
-function createRoom() {
-  const name = prompt('Enter your name:');
+async function createRoom() {
+  const name = await showNameModal();
   if (!name) return;
   playerName = name;
   const code = generateRoomCode();
@@ -659,12 +739,12 @@ function generateRoomCode() {
   return Array.from({length: 4}, () => String.fromCharCode(65 + Math.random() * 26)).join('');
 }
 
-function joinRoom(code) {
+async function joinRoom(code) {
   if (code.length !== 4) {
     showError('Room code must be 4 characters');
     return;
   }
-  const name = prompt('Enter your name:');
+  const name = await showNameModal();
   if (!name) return;
   playerName = name;
   roomCode = code;

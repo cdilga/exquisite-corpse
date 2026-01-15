@@ -195,6 +195,15 @@ function getHeadSection() {
       border-color: var(--crimson-light);
     }
 
+    /* Modal scroll lock - prevents background scrolling when modal is open */
+    body.modal-open {
+      overflow: hidden !important;
+    }
+    body.modal-open .app-container {
+      overflow: hidden !important;
+      pointer-events: none;
+    }
+
     /* Name Modal Styles */
     .modal-backdrop-enter {
       animation: backdropFadeIn 0.3s ease-out forwards;
@@ -657,12 +666,14 @@ function getScriptSection() {
         elements.nameInput.value = '';
         elements.nameError.classList.add('hidden');
         elements.nameModal.classList.remove('hidden');
+        document.body.classList.add('modal-open');
         setTimeout(() => elements.nameInput.focus(), 100);
       });
     }
 
     function hideNameModal() {
       elements.nameModal.classList.add('hidden');
+      document.body.classList.remove('modal-open');
     }
 
     function validateAndSubmitName() {

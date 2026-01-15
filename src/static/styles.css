@@ -17,6 +17,8 @@
 
 /* Lock the viewport - no body scrolling (ryOS approach) */
 html {
+  height: 100%;
+  height: 100dvh;
   overscroll-behavior: none;
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
@@ -30,9 +32,13 @@ body {
   padding: 0;
   overflow: hidden;
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overscroll-behavior: none;
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
@@ -41,8 +47,6 @@ body {
   -webkit-overscroll-behavior-y: none;
   touch-action: none;
   -ms-touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
   background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
   color: var(--text-light);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -51,7 +55,13 @@ body {
 /* App container - handles all internal scrolling */
 .app-container {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -61,7 +71,6 @@ body {
   -webkit-overscroll-behavior: none;
   -webkit-overscroll-behavior-x: none;
   -webkit-overscroll-behavior-y: none;
-  scroll-behavior: smooth;
   touch-action: pan-y pinch-zoom;
 }
 
@@ -69,7 +78,7 @@ body {
 .app-content {
   min-height: 100%;
   padding: 1rem;
-  padding-bottom: env(safe-area-inset-bottom, 1rem);
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
 /* Sinister background texture */

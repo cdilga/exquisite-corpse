@@ -41,35 +41,49 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # List KV namespaces as JSON and parse with jq
-          echo "Fetching KV namespaces..."
-          KV_JSON=$(wrangler kv namespace list --json 2>&1 || echo "[]")
-          echo "KV namespaces response: $KV_JSON"
+          NAMESPACE_TITLE="exquisite-corpse-shared-stories"
 
-          # Check if our namespace exists and get its ID
-          KV_ID=$(echo "$KV_JSON" | jq -r '.[] | select(.title == "exquisite-corpse-shared-stories") | .id' 2>/dev/null || echo "")
+          # Use Cloudflare API directly for reliable JSON output
+          echo "Fetching KV namespaces via API..."
+          KV_RESPONSE=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          # Check if our namespace exists
+          KV_ID=$(echo "$KV_RESPONSE" | jq -r ".result[] | select(.title == \"$NAMESPACE_TITLE\") | .id" 2>/dev/null || echo "")
 
           if [ -n "$KV_ID" ]; then
             echo "✅ KV namespace already exists with ID: $KV_ID"
           else
             echo "📦 Creating KV namespace..."
-            set +e  # Disable exit on error temporarily
-            CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories" 2>&1)
-            CREATE_EXIT_CODE=$?
-            set -e  # Re-enable exit on error
+            CREATE_RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "{\"title\": \"$NAMESPACE_TITLE\"}")
 
-            echo "Create command output:"
-            echo "$CREATE_OUTPUT"
-            echo "Exit code: $CREATE_EXIT_CODE"
+            SUCCESS=$(echo "$CREATE_RESPONSE" | jq -r '.success')
 
-            if [ $CREATE_EXIT_CODE -eq 0 ]; then
-              # Parse the ID from the create output (format: id = "...")
-              KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
+            if [ "$SUCCESS" = "true" ]; then
+              KV_ID=$(echo "$CREATE_RESPONSE" | jq -r '.result.id')
               echo "✅ Created KV namespace with ID: $KV_ID"
             else
-              echo "❌ Failed to create KV namespace"
-              echo "Error details: $CREATE_OUTPUT"
-              exit 1
+              # Check if it's "already exists" error
+              ERROR_CODE=$(echo "$CREATE_RESPONSE" | jq -r '.errors[0].code // empty')
+              if [ "$ERROR_CODE" = "10014" ]; then
+                echo "⚠️ Namespace exists (race condition), fetching ID..."
+                KV_RESPONSE=$(curl -s -X GET \
+                  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+                  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                  -H "Content-Type: application/json")
+                KV_ID=$(echo "$KV_RESPONSE" | jq -r ".result[] | select(.title == \"$NAMESPACE_TITLE\") | .id")
+                echo "✅ Found existing namespace with ID: $KV_ID"
+              else
+                echo "❌ Failed to create KV namespace"
+                echo "$CREATE_RESPONSE" | jq .
+                exit 1
+              fi
             fi
           fi
 
@@ -153,34 +167,48 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # List KV namespaces as JSON and parse with jq
-          echo "Fetching KV namespaces..."
-          KV_JSON=$(wrangler kv namespace list --json 2>&1 || echo "[]")
-          echo "KV namespaces response: $KV_JSON"
+          NAMESPACE_TITLE="exquisite-corpse-shared-stories-preview"
 
-          # Check if our preview namespace exists and get its ID
-          KV_ID=$(echo "$KV_JSON" | jq -r '.[] | select(.title == "exquisite-corpse-shared-stories-preview") | .id' 2>/dev/null || echo "")
+          # Use Cloudflare API directly for reliable JSON output
+          echo "Fetching KV namespaces via API..."
+          KV_RESPONSE=$(curl -s -X GET \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          # Check if our namespace exists
+          KV_ID=$(echo "$KV_RESPONSE" | jq -r ".result[] | select(.title == \"$NAMESPACE_TITLE\") | .id" 2>/dev/null || echo "")
 
           if [ -n "$KV_ID" ]; then
             echo "✅ Preview KV namespace already exists with ID: $KV_ID"
           else
             echo "📦 Creating preview KV namespace..."
-            set +e  # Disable exit on error temporarily
-            CREATE_OUTPUT=$(wrangler kv namespace create "exquisite-corpse-shared-stories-preview" 2>&1)
-            CREATE_EXIT_CODE=$?
-            set -e  # Re-enable exit on error
+            CREATE_RESPONSE=$(curl -s -X POST \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data "{\"title\": \"$NAMESPACE_TITLE\"}")
 
-            echo "Create command output:"
-            echo "$CREATE_OUTPUT"
-            echo "Exit code: $CREATE_EXIT_CODE"
+            SUCCESS=$(echo "$CREATE_RESPONSE" | jq -r '.success')
 
-            if [ $CREATE_EXIT_CODE -eq 0 ]; then
-              # Parse the ID from the create output
-              KV_ID=$(echo "$CREATE_OUTPUT" | grep -o 'id = "[^"]*"' | sed 's/id = "\([^"]*\)"/\1/')
+            if [ "$SUCCESS" = "true" ]; then
+              KV_ID=$(echo "$CREATE_RESPONSE" | jq -r '.result.id')
               echo "✅ Created preview KV namespace with ID: $KV_ID"
             else
-              echo "⚠️ Failed to create KV namespace, will use placeholder"
-              echo "Error details: $CREATE_OUTPUT"
+              # Check if it's "already exists" error
+              ERROR_CODE=$(echo "$CREATE_RESPONSE" | jq -r '.errors[0].code // empty')
+              if [ "$ERROR_CODE" = "10014" ]; then
+                echo "⚠️ Namespace exists (race condition), fetching ID..."
+                KV_RESPONSE=$(curl -s -X GET \
+                  "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces" \
+                  -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                  -H "Content-Type: application/json")
+                KV_ID=$(echo "$KV_RESPONSE" | jq -r ".result[] | select(.title == \"$NAMESPACE_TITLE\") | .id")
+                echo "✅ Found existing namespace with ID: $KV_ID"
+              else
+                echo "⚠️ Failed to create KV namespace, will use placeholder"
+                echo "$CREATE_RESPONSE" | jq .
+              fi
             fi
           fi
 

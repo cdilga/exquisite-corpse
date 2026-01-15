@@ -7,14 +7,14 @@ export function getHomePage() {
   return '<!DOCTYPE html>' +
     '<html lang="en">' +
     '<head>' + head + '</head>' +
-    '<body class="p-4">' + body +
+    '<body>' + body +
     '<script>' + script + '</script>' +
     '</body></html>';
 }
 
 function getHeadSection() {
   return `  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Exquisite Corpse - Collaborative Story Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,12 +33,70 @@ function getHeadSection() {
       --border-glow: #991b1b;
     }
 
+    /* Lock the viewport - no body scrolling (ryOS approach) */
+    html {
+      height: 100%;
+      height: 100dvh;
+      overscroll-behavior: none;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: none;
+      -webkit-overscroll-behavior: none;
+      -webkit-overscroll-behavior-x: none;
+      -webkit-overscroll-behavior-y: none;
+    }
+
     body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overscroll-behavior: none;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: none;
+      -webkit-overscroll-behavior: none;
+      -webkit-overscroll-behavior-x: none;
+      -webkit-overscroll-behavior-y: none;
+      touch-action: none;
+      -ms-touch-action: none;
       background: linear-gradient(135deg, #0f172a 0%, #1a1f35 50%, #16213e 100%);
-      min-height: 100vh;
       color: var(--text-light);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      position: relative;
+    }
+
+    /* App container - handles all internal scrolling */
+    .app-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: none;
+      -webkit-overscroll-behavior: none;
+      -webkit-overscroll-behavior-x: none;
+      -webkit-overscroll-behavior-y: none;
+      touch-action: pan-y pinch-zoom;
+    }
+
+    /* Inner content wrapper for padding */
+    .app-content {
+      min-height: 100%;
+      padding: 1rem;
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
 
     /* Sinister background texture */
@@ -202,7 +260,9 @@ function getHeadSection() {
 }
 
 function getBodySection() {
-  return `<div class="max-w-2xl mx-auto">
+  return `<div class="app-container">
+  <div class="app-content">
+  <div class="max-w-2xl mx-auto">
     <!-- Landing Screen -->
     <div id="landing-screen" class="dark-card rounded-2xl p-8 fade-in">
       <h1 class="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent">📝 Exquisite Corpse</h1>
@@ -228,9 +288,9 @@ function getBodySection() {
             id="room-code-input"
             placeholder="CODE"
             maxlength="4"
-            class="flex-1 px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 uppercase text-center text-2xl font-bold tracking-wider bg-slate-800 text-white placeholder-gray-600 transition"
+            class="flex-1 min-w-0 px-4 py-3 border-2 border-gray-700 rounded-lg focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600 uppercase text-center text-2xl font-bold tracking-wider bg-slate-800 text-white placeholder-gray-600 transition"
           />
-          <button id="join-room-btn" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold px-6 rounded-lg transition button-press shadow-lg hover:shadow-red-900/50">
+          <button id="join-room-btn" class="bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 text-white font-bold px-6 rounded-lg transition button-press shadow-lg hover:shadow-red-900/50 flex-shrink-0">
             Join
           </button>
         </div>
@@ -400,6 +460,8 @@ function getBodySection() {
     <!-- Error Display -->
     <div id="error-message" class="hidden mt-4 p-4 bg-red-900 border-l-4 border-red-500 text-red-200 rounded fade-in"></div>
   </div>
+  </div>
+  </div>
 
   <!-- Name Entry Modal -->
   <div id="name-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -450,6 +512,45 @@ function getBodySection() {
 function getScriptSection() {
   // This returns the raw JavaScript code
   return `
+    // Handle virtual keyboard resize using Visual Viewport API
+    function setupViewportHandler() {
+      if (window.visualViewport) {
+        const appContainer = document.querySelector('.app-container');
+
+        function handleViewportResize() {
+          // Prevent any scrolling when keyboard opens
+          const viewport = window.visualViewport;
+          document.body.style.height = viewport.height + 'px';
+          if (appContainer) {
+            appContainer.style.height = viewport.height + 'px';
+          }
+          // Prevent scroll position changes
+          window.scrollTo(0, 0);
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }
+
+        window.visualViewport.addEventListener('resize', handleViewportResize);
+        window.visualViewport.addEventListener('scroll', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+        });
+
+        // Initial call
+        handleViewportResize();
+      }
+    }
+
+    // Run on load
+    setupViewportHandler();
+
+    // Prevent any scroll events on body/html
+    document.addEventListener('scroll', (e) => {
+      if (e.target === document || e.target === document.body || e.target === document.documentElement) {
+        window.scrollTo(0, 0);
+      }
+    }, { passive: false });
+
     let ws = null;
     let playerId = null;
     let playerName = null;
